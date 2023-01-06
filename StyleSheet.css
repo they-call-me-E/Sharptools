@@ -1,9 +1,3 @@
-<!DOCTYPE HTML>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Embedded Style Sheet</title>
-
   body {overflow: hidden; background: #212121FF; background-color : transparent;}
   .hero {
     position: fixed;
@@ -16,15 +10,7 @@
     width:100%;
     background: transparent;
   }
-  <!--
-  .main-background{
-  position: fixed;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
-  } -->
-  
+
 .bg-img{
   height:100%;
   width: 100%;
