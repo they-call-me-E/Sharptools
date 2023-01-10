@@ -4,28 +4,22 @@
   "schema": "0.1.0",
   "settings": [
     {
-      "type": "STRING",
+      "default": "America/New_York",
       "name": "timezone",
       "label": "Timezone (IANA format)",
-      "default": "America/Chicago"
+      "type": "STRING"
     },
     {
-      "name": "tzInfo",
-      "value": "<a href='https://en.wikipedia.org/wiki/List_of_tz_database_time_zones' target='_blank'>IANA format</a> is Region/Subregion",
       "label": "",
-      "type": "LABEL"
-    },
-    {
-      "default": "LT",
-      "name": "timeFormat",
-      "type": "STRING",
-      "label": "Time Format (dayjs)"
-    },
-    {
-      "name": "formatInfo",
-      "value": "See <a href='https://dayjs.org/docs/en/display/format' target='_blank'>dayjs format</a> docs for more (eg. 'HH:mm' or 'h:mm a')",
+      "value": "<a href='https://en.wikipedia.org/wiki/List_of_tz_database_time_zones' target='_blank'>IANA format</a> is Region/Subregion",
       "type": "LABEL",
-      "label": ""
+      "name": "tzInfo"
+    },
+    {
+      "value": "See <a href='https://dayjs.org/docs/en/display/format' target='_blank'>dayjs format</a> docs for more (eg. 'HH:mm' or 'h:mm a')",
+      "label": "",
+      "type": "LABEL",
+      "name": "formatInfo"
     }
   ],
   "name": "Flip Clock",
@@ -58,15 +52,17 @@
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/localizedFormat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/advancedFormat.js"></script>
 
 <script>
   //setup the dayjs plugins
   dayjs.extend(window.dayjs_plugin_utc)
   dayjs.extend(window.dayjs_plugin_timezone)
   dayjs.extend(window.dayjs_plugin_localizedFormat)
+  dayjs.extend(window.dayjs_plugin_advancedFormat)
   //setup the timezone variable with a default timezone
   let tz = "America/New_York"
-  let timeFormat = "hh:mm"
+  
   //and grab the clock element, so we can update it
   let clockHr = document.getElementById("clock-hr");
   let clockMr = document.getElementById("clock-mn");
@@ -204,5 +200,4 @@
   top: 80%;
   left: 80%;
 }
-.
-</style></div>
+</style>
