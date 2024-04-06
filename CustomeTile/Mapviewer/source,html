@@ -1,0 +1,661 @@
+<script type="application/json" id="tile-settings">
+{
+  "schema": "0.1.0",
+  "settings": [
+    {"type": "STRING", "label": "Mapbox Access Token", "name": "mToken"},
+    {"label": "Map Zone Latitude ", "type": "NUMBER", "name": "mLat"},
+    {"label": "Map Zone Longitude ", "name": "mLon", "type": "NUMBER"},
+    {
+      "name": "mZoom",
+      "label": "Map Zone Zoom Level (0-22) 0 = Zoomed Out, 22 = Zoomed In",
+      "type": "NUMBER"
+    },
+    {"name": "mapToken", "label": "MapBox Access Token", "type": "STRING"}
+  ],
+  "name": "Mapviewer v5",
+  "dimensions": {"width": 3, "height": 3}
+}
+</script>
+
+<meta charset="utf-8">
+<script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<script src="//cdn.sharptools.io/js/custom-tiles.js"></script>
+<script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.js"></script>
+<link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
+
+<style>
+    /* CSS for the info box */
+    .info-box {
+        position: absolute;
+        z-index: 999;
+        width: 200px; /* Adjust the width as needed */
+        max-height: 200px; /* Adjust the max-height as needed */
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 25px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 10px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+    }
+
+    .info-box h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
+
+    .info-box p {
+        margin: 5px 0;
+    }
+
+    .close-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        cursor: pointer;
+        color: black;
+        float: right;
+        font-size: 30px;
+        font-weight: bold;
+    }
+    .content {
+        color: black; /* Set text color to black */
+        font-size: 16px; /* Set font size */
+        line-height: 1.5; /* Set line height for better readability */
+    }
+    .badge {
+       width: 30px;
+       height: 30px;
+       border-radius: 50%;
+       border: 2px solid black;
+       background-color: #ffffff;
+       /* position: absolute; */
+       position: relative;
+       width: 100%;
+      
+       top: -75px;
+       left: 0px;
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       background-image: url('https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png');
+       background-size: contain;
+       background-repeat: no-repeat; /* Prevent tiling */
+       background-position: center; /* Center the image */
+       background-position: left center; /* Position image on the left */
+      justify-content: space-between;
+    }
+  .badge-text {
+    margin-right: 5px; /* Add some space between the image and the text */
+    font-size: 12px; /* Adjust font size as needed */
+    font-family: Helvetica;
+    color: black; /* Set the text color to black */
+    font-weight: 900;
+    position: absolute;
+    top: 25%;
+    right: 0;
+  }
+/* The side navigation menu */
+.sidenav1 {
+    height: 100%; /* 100% Full-height */
+    width: 0; /* 0 width - change this with JavaScript */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Stay on top */
+    top: 0;
+    left: 0;
+    background-color: #111; /* Black*/
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 60px; /* Place content 60px from the top */
+    transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
+}
+
+.sidenav {
+    height: 100%;
+    width: 0; /* Set initial width to 0 */
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #111;
+    overflow-x: hidden;
+    padding-top: 60px;
+    transition: 0.5s;
+    transform: translateX(-100%); /* Move the sidebar off-screen */
+}
+
+/* The navigation menu links */
+.sidenav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    font-family: Gotham;
+    color: #818181;
+    display: block;
+    transition: 0.3s
+}
+
+/* When you mouse over the navigation links, change their color */
+.sidenav a:hover, .offcanvas a:focus{
+    color: #f1f1f1;
+}
+
+/* Position and style the close button (top right corner) */
+.sidenav .closebtn {
+    position: absolute;
+    top: 0;
+</style>
+
+<div id="map" style="position: absolute; top: 0px; left: 0px; bottom: 0px; width: 100%;"></div>
+
+<script>
+  stio.ready(function(data){
+console.log('The user specified token is', data.settings.token)
+});
+  var mLat = 35.18969231143789;
+  var mLon = -82.04842360357094;
+  var mZoom = 8;
+  var maptoken = '';
+  var mapSettings = {
+      mLat: 35.18969231143789,
+      mLon: -82.04842360357094,
+      mZoom: 8,
+      mapToken: ''
+    };
+   
+  stio.ready((data)=>{
+    console.log("Starting MapViewer Init [shortyyy]");
+    console.log("stio library is ready with token", data.settings.mapToken);        
+    if(data.settings.mapToken == null){
+        console.log("Please configure the authorization token and at least 1 device");
+        //return;
+    }
+    else{            
+        mapSettings.mapToken = data.settings.mapToken;
+        mapSettings.mLat = data.settings.mLat;
+        mapSettings.mLon = data.settings.mLon;
+        mapSettings.mZoom = data.settings.mZoom;
+    } 
+    console.log('mLat: '+ mapSettings.mLat);
+    console.log('mlon: '+ mapSettings.mLon);
+    console.log('bypas get token',data.settings.mapToken);
+    console.log('token = '+ mapSettings.mapToken)
+    //console.log('Map Token : 1234');
+ 
+    
+  });
+  console.log('Token : '+mapSettings.mapToken);
+  mapboxgl.accessToken = "pk.eyJ1IjoidGhleWNhbGxtZWUiLCJhIjoiY2xhZXF6anQxMHgzazNxczNzd2I5em10dyJ9.fa-pBQ_2cMg9H2fD-FBCDg";
+  //mapboxgl.accessToken = mapSettings.mapToken;
+  const map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/dark-v10",
+    zoom: mZoom,
+    center: [mLon, mLat]
+  });
+  console.log(mapboxgl.accessToken); 
+ 
+  // Function to update the marker's position
+  function updateMarkerPosition(marker, newLng, newLat) {
+    marker.setLngLat([newLng, newLat]);
+  }
+
+function addGeofence(geodata) {
+    var radiusInMeters = geodata.radiusInFeet * 0.3048; // Convert feet to meters
+
+    // Function to calculate the circle radius based on the map's zoom level
+    function calculateRadius(zoom) {
+        var baseZoom = 12;
+        var baseRadius = radiusInMeters / 2;
+        var scaleFactor = Math.pow(2, zoom - baseZoom);
+        return baseRadius * scaleFactor;
+    }
+
+    // Initial circle radius
+    var initialRadius = calculateRadius(map.getZoom());
+
+    // Add the outer geofence circle
+    map.addLayer({
+        id: geodata.geofenceId,
+        type: 'circle',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: geodata.center
+                }
+            }
+        },
+        paint: {
+            'circle-radius': initialRadius,
+            'circle-color': '#007cbf',
+            'circle-opacity': 0.25
+        }
+    });
+
+    // Update the circle radius when the map is zoomed
+    map.on('zoom', function () {
+        var newRadius = calculateRadius(map.getZoom());
+        map.setPaintProperty(geodata.geofenceId, 'circle-radius', newRadius);
+    });
+
+    // Add the red inner circle
+    map.addLayer({
+        id: geodata.geofenceId + '-inner',
+        type: 'circle',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: geodata.center
+                }
+            }
+        },
+        paint: {
+            'circle-radius': 18,
+            'circle-color': '#ff0000' // Red color
+        }
+    });
+
+    // Add the default marker
+    const defaultMarker = new mapboxgl.Marker({
+        anchor: 'bottom', // Anchor the marker to the bottom
+        offset: [0,24] // Offset the marker to align with the circle
+    })
+        .setLngLat(geodata.center)
+        .addTo(map);
+
+    // Add a red circle around the marker
+    map.addLayer({
+        id: geodata.geofenceId + '-circle',
+        type: 'circle',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: geodata.center
+                }
+            }
+        },
+        paint: {
+            'circle-radius': 22,
+            'circle-color': '#FFFFFF', // Red color
+            'circle-opacity': 1
+        }
+    });
+}
+  
+// Function to add a marker with an image and an optional badge, accepting a JSON object as an argument
+function addMember(membersData) {
+    var el = document.createElement('div');
+    el.className = 'marker';
+
+    // Create the circular part of the pin
+    var circle = document.createElement('div');
+    circle.style.width = '60px';
+    circle.style.height = '60px';
+    circle.style.borderRadius = '50%';
+    circle.style.backgroundColor = '#ffffff'; // Set background color to white
+    circle.style.position = 'absolute';
+    circle.style.top = '50%';
+    circle.style.left = '50%';
+    circle.style.transform = 'translate(-50%, -100%)'; // Center and raise the circle above the marker's point
+
+    // Create an image element for the marker image
+    var img = document.createElement('img');
+    img.src = membersData.image_url;
+    img.style.width = '100%'; // Adjust the size of the image as needed
+    img.style.height = '100%';
+    img.style.borderRadius = '50%'; // Make the image circular
+
+    // Apply grayscale filter if screen is 'off'
+    if (membersData.status.location_sharing === 'off') {
+        img.style.filter = 'grayscale(100%)';
+    }
+
+    // Add the image to the circle
+    circle.appendChild(img);
+
+    // Create the tail of the pin
+    var tail = document.createElement('div');
+    tail.style.width = '0';
+    tail.style.height = '0';
+    tail.style.borderLeft = '6px solid transparent';
+    tail.style.borderRight = '6px solid transparent';
+    tail.style.borderTop = '5px solid white';
+    tail.style.position = 'absolute';
+    tail.style.left = '50%';
+    tail.style.top = '-1px';
+    tail.style.transform = 'translateX(-50%)'; // Center the tail below the circle
+
+    el.appendChild(tail);
+    el.appendChild(circle);
+
+    // Add a badge
+    var badge = document.createElement('div');
+    badge.className = 'badge';
+    badge.style.width = membersData.status.speed !== 0 ? '100px' : '30px';
+    badge.style.height = '30px';
+    badge.style.borderRadius = membersData.status.speed !== 0 ? '15px' : '50%'; // Adjust border radius based on speed presence
+    badge.style.border = '2px solid black'; // Set the border thickness and style
+    badge.style.backgroundColor = '#ffffff';
+    badge.style.position = 'absolute';
+    badge.style.top = '-75px';
+    badge.style.left = '0px';
+    badge.style.display = 'flex'; // Set the display to flex
+    badge.style.justifyContent = 'center'; // Center content horizontally
+    badge.style.alignItems = 'center'; // Center content vertically
+    badge.style.backgroundImage = `url(${badgeImageUrl})`; // Set the background image URL
+    badge.style.backgroundSize = 'contain'; // Maintain aspect ratio without stretching
+
+    // Add speed text if present
+    if (membersData.status.speed !== 0) {
+        var speedText = document.createElement('span');
+        speedText.className = 'badge-text';
+        speedText.textContent = membersData.status.speed + ' mph'; // Assuming speed is in mph
+        //speedText.style.fontSize = '12px'; // Adjust font size as needed
+        speedText.style.marginLeft = '5px'; // Add some space between the image and the text
+        speedText.style.color = 'black'; // Set the text color to black
+        badge.appendChild(speedText);
+    }
+
+    el.appendChild(badge);
+
+    // Change the background color of the marker
+    el.style.backgroundColor = 'blue';
+
+    var marker = new mapboxgl.Marker(el)
+        .setLngLat([membersData.location.longitude, membersData.location.latitude])
+        .addTo(map);
+
+    return marker; // Return the marker instance
+}
+
+function createMemberInfoBox(member) {
+    // Create a box element
+    var infoBox = document.createElement('div');
+    infoBox.className = 'info-box';
+    infoBox.onclick = function() {
+        infoBox.style.display = 'none';
+    };
+  
+    // Add CSS styles
+    infoBox.style.position = 'absolute';
+    infoBox.style.backgroundColor = '#f9f9f9';
+    infoBox.style.padding = '20px';
+    infoBox.style.border = '1px solid #d3d3d3';
+    infoBox.style.borderRadius = '25px';
+    infoBox.style.zIndex = '100';
+
+    // Create a close button
+    var closeButton = document.createElement('span');
+    closeButton.className = 'close-button';
+    closeButton.textContent = 'x';
+    closeButton.onclick = function() {
+        infoBox.style.display = 'none';
+    };
+
+    // Add CSS styles for close button
+    closeButton.style.color = 'black';
+    closeButton.style.float = 'right';
+    closeButton.style.fontSize = '20px';
+    closeButton.style.fontWeight = 'bold';
+
+    // Create content for the box
+    var content = document.createElement('div');
+    content.className = 'content';
+    content.innerHTML = `
+        <h2>${member.name}</h2>
+        <p>Location: ${member.location.latitude}, ${member.location.longitude}</p>
+        <p>Status: ${member.status.screen}</p>
+        <p>Speed: ${member.status.speed} mph</p>
+    `;
+
+    // Append close button and content to the box
+    infoBox.appendChild(closeButton);
+    infoBox.appendChild(content);
+
+    // Position the info box in the center of the map
+    var mapContainer = document.getElementById('map');
+    var mapRect = mapContainer.getBoundingClientRect();
+    var boxWidth = 300; // Adjust as needed
+    var boxHeight = 200; // Adjust as needed
+    infoBox.style.left = ((mapRect.width - boxWidth) / 2) + 'px';
+    infoBox.style.top = ((mapRect.height - boxHeight) / 2) + 'px';
+
+    // Append the box to the body
+    document.body.appendChild(infoBox);
+}
+  
+function addMultipleGeofences(geodataArray) {
+    geodataArray.forEach(function (geodata) {
+        addGeofence(geodata);
+    });
+}
+
+function metersToLongitudeDegrees(meters, atLatitude) {
+    return meters / (111.32 * Math.cos(atLatitude * Math.PI / 180));
+}
+
+function addHexagonv3(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth) {
+    var coordinates = [];
+    var angleDeg, angleRad, x, y;
+
+    // Convert size in meters to degrees latitude
+    var latDelta = sizeInMeters / 111320; // Approximate conversion: 1 degree = 111320 meters
+
+    for (var i = 0; i < 6; i++) {
+        angleDeg = 60 * i;
+        angleRad = (angleDeg * Math.PI) / 180;
+        x = lon + latDelta * Math.cos(angleRad);
+        y = lat + latDelta * Math.sin(angleRad);
+        coordinates.push([x, y]);
+    }
+    coordinates.push(coordinates[0]); // Close the polygon
+
+    map.addLayer({
+        id: hexagonId + '-fill',
+        type: 'fill',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [coordinates]
+                }
+            }
+        },
+        layout: {},
+        paint: {
+            'fill-color': 'yellow',
+            'fill-opacity': 0.5
+        }
+    });
+
+    map.addLayer({
+        id: hexagonId + '-line',
+        type: 'line',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [coordinates]
+                }
+            }
+        },
+        layout: {},
+        paint: {
+            'line-color': borderColor,
+            'line-width': borderWidth
+        }
+    });
+}
+  
+function createMemberInfoBox1(member) {
+    // Create a box element
+    var infoBox = document.createElement('div');
+    infoBox.className = 'info-box';
+    
+    // Create a close button
+    var closeButton = document.createElement('span');
+    closeButton.className = 'close-button';
+    closeButton.textContent = 'x';
+    closeButton.onclick = function() {
+        infoBox.style.display = 'none';
+    };
+    
+    // Create content for the box
+    var content = document.createElement('div');
+    content.className = 'content';
+    content.innerHTML = `
+        <h2>${member.name}</h2>
+        <p>Location: ${member.location.latitude}, ${member.location.longitude}</p>
+        <p>Status: ${member.status.screen}</p>
+        <p>Speed: ${member.status.speed} mph</p>
+    `;
+    
+    // Append close button and content to the box
+    infoBox.appendChild(closeButton);
+    infoBox.appendChild(content);
+    
+    // Position the info box in the center of the map
+    var mapContainer = document.getElementById('map');
+    var mapRect = mapContainer.getBoundingClientRect();
+    var boxWidth = 300; // Adjust as needed
+    var boxHeight = 200; // Adjust as needed
+    infoBox.style.left = ((mapRect.width - boxWidth) / 2) + 'px';
+    infoBox.style.top = ((mapRect.height - boxHeight) / 2) + 'px';
+    
+    // Append the box to the body
+    document.body.appendChild(infoBox);
+}
+  // Define the badge URL as a constant
+  const badgeImageUrl = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png';
+
+  var geodataArray = [
+    {
+        center: [-81.960750, 35.070420],
+        radiusInFeet: 100,
+        geofenceId: 'geofence1',
+        pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
+    },
+    {
+        center: [-81.950000, 35.080000],
+        radiusInFeet: 150,
+        geofenceId: 'geofence2',
+        pinImageUrl: ''
+    }
+];
+
+
+  map.on('load', function() {
+    
+    var geofenceData = {
+      center: [-81.960750, 35.070420],
+      radiusInFeet: 100,
+      geofenceId: 'geofence1',
+      pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
+    };
+
+    
+    addMultipleGeofences(geodataArray);
+    
+    var membersData = {
+      id: "1",
+      name: "Jake Mohl",
+      location: {
+        latitude: 35.07043,
+        longitude: -81.96076
+      },
+     status: {
+       screen: "off",
+       location_sharing: "on",
+       isMoving: true,
+       speed: 110,
+       wifi: 'on',
+         device: {
+           screen: "off",
+           wifi: "on",
+           batter_level: 89,
+           charging: 'yes'
+         }
+     },
+     image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+     badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
+   };
+    var marker = addMember(membersData);
+
+    // Add a click event listener to the marker
+    marker.getElement().addEventListener('click', function() {
+       createMemberInfoBox(membersData);
+    });
+    
+    var lat = 35.080000; // Example latitude offset from the geofence
+    var lon = -81.950000; // Example longitude offset from the geofence
+    var hexagonId = 'hexagon1'; // Unique ID for the hexagon layer
+    var sizeInMeters = 1000; // Example size of the hexagon in meters
+    var borderColor = 'red'; // Border color
+    var borderWidth = 2; // Border width in pixels
+    
+    //var hexagonId = 'hexagon1'; // Unique ID for the hexagon layer
+    //addHexagonv3(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth);
+
+   });
+  
+
+  // Function to simulate marker movement
+  function simulateMovement(marker, step, interval) {
+    var lng = marker.getLngLat().lng;
+    var lat = marker.getLngLat().lat;
+
+    setInterval(() => {
+      lng += step;
+      lat += step;
+      updateMarkerPosition(marker, lng, lat);
+    }, interval);
+
+    
+   // addHexagon(lat, lon, size, hexagonId);
+    
+  }// end on map load.
+
+</script>
+<div id="mySidenav" class="sidenav">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+  <a href="#">About</a>
+  <a href="#">Services</a>
+  <a href="#">Clients</a>
+  <a href="#">Contact</a>
+</div>
+
+<!-- <span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="closeNav()"><img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;"></span> -->
+<span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="openNav()">
+    <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;">
+</span>
+<script>
+function openNav1() {
+  var sidebar = document.getElementById("mySidenav");
+  sidebar.style.width = "300px";
+}
+function closeNav() {
+    var sidebar = document.getElementById("mySidenav");
+    sidebar.style.width = "0"; // Set the width to 0
+    //sidebar.style.left = "-300px"; // Move the sidebar off-screen to the left
+}
+  function openNav() {
+    var sidebar = document.getElementById("mySidenav");
+    sidebar.style.width = "300px"; // Set the width to the desired size
+    sidebar.style.transform = "translateX(0)"; // Move the sidebar into view
+}
+
+</script>
