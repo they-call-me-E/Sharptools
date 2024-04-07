@@ -2,9 +2,9 @@
 {
   "schema": "0.1.0",
   "settings": [
-    {"type": "STRING", "label": "Mapbox Access Token", "name": "mToken"},
-    {"label": "Map Zone Latitude ", "type": "NUMBER", "name": "mLat"},
-    {"label": "Map Zone Longitude ", "name": "mLon", "type": "NUMBER"},
+    {"name": "mToken", "label": "Mapbox Access Token", "type": "STRING"},
+    {"name": "mLat", "label": "Map Zone Latitude ", "type": "NUMBER"},
+    {"name": "mLon", "label": "Map Zone Longitude ", "type": "NUMBER"},
     {
       "name": "mZoom",
       "label": "Map Zone Zoom Level (0-22) 0 = Zoomed Out, 22 = Zoomed In",
@@ -25,11 +25,18 @@
 <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
 
 <style>
+  .mapboxgl-ctrl-logo {
+      display: none !important;
+  }
+  .mapboxgl-ctrl-bottom-right {
+    display: none !important;
+  }
+  .mapboxgl-ctrl-bottom-right
     /* CSS for the info box */
     .info-box {
         position: absolute;
         z-index: 999;
-        width: 200px; /* Adjust the width as needed */
+        width: 100%; /* Adjust the width as needed */
         max-height: 200px; /* Adjust the max-height as needed */
         background-color: white;
         border: 1px solid #ccc;
@@ -38,6 +45,7 @@
         padding: 10px;
         font-family: Arial, sans-serif;
         font-size: 14px;
+        top: 14%;
     }
 
     .info-box h2 {
@@ -98,56 +106,39 @@
     right: 0;
   }
 /* The side navigation menu */
-.sidenav1 {
-    height: 100%; /* 100% Full-height */
-    width: 0; /* 0 width - change this with JavaScript */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Stay on top */
-    top: 0;
-    left: 0;
-    background-color: #111; /* Black*/
-    overflow-x: hidden; /* Disable horizontal scroll */
-    padding-top: 60px; /* Place content 60px from the top */
-    transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
-}
 
-.sidenav {
-    height: 100%;
-    width: 0; /* Set initial width to 0 */
+.tray {
+    height: 35%;
+    width: 100%; /* Set initial width to 0 */
     position: fixed;
     z-index: 1;
-    top: 0;
+    top: 60%; 
     left: 0;
     background-color: #111;
     overflow-x: hidden;
-    padding-top: 60px;
+    /* padding-top: 60px; */
     transition: 0.5s;
-    transform: translateX(-100%); /* Move the sidebar off-screen */
+    transform: translateY(100%); /* Move the sidebar off-screen */
+    border-radius: 25px;
+    
 }
-
-/* The navigation menu links */
-.sidenav a {
-    padding: 8px 8px 8px 32px;
-    text-decoration: none;
-    font-size: 25px;
-    font-family: Gotham;
-    color: #818181;
-    display: block;
-    transition: 0.3s
-}
-
-/* When you mouse over the navigation links, change their color */
-.sidenav a:hover, .offcanvas a:focus{
-    color: #f1f1f1;
-}
-
-/* Position and style the close button (top right corner) */
-.sidenav .closebtn {
+.cardImg{
+    height: 100px;  
     position: absolute;
-    top: 0;
+    top: 5%;
+    left: 0;
+}  
+.battLevel{
+    background-color: #65fe08;
+    width: 27px;
+    height: 20px;
+    position: absolute;
+    top: 10%;
+    left: 10%;
+}
 </style>
 
-<div id="map" style="position: absolute; top: 0px; left: 0px; bottom: 0px; width: 100%;"></div>
+
 
 <script>
   stio.ready(function(data){
@@ -192,8 +183,10 @@ console.log('The user specified token is', data.settings.token)
     container: "map",
     style: "mapbox://styles/mapbox/dark-v10",
     zoom: mZoom,
-    center: [mLon, mLat]
+    center: [mLon, mLat],
+    showLogo: false
   });
+  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
   console.log(mapboxgl.accessToken); 
  
   // Function to update the marker's position
@@ -295,7 +288,8 @@ function addGeofence(geodata) {
 // Function to add a marker with an image and an optional badge, accepting a JSON object as an argument
 function addMember(membersData) {
     var el = document.createElement('div');
-    el.className = 'marker';
+    //el.className = 'marker';
+    el.className = 'marker ' + membersData.id; // Assigning the member's ID as a class name
 
     // Create the circular part of the pin
     var circle = document.createElement('div');
@@ -375,10 +369,73 @@ function addMember(membersData) {
         .setLngLat([membersData.location.longitude, membersData.location.latitude])
         .addTo(map);
 
+     marker.getElement().addEventListener('click', function() {
+       createMemberInfoBox(membersData);
+     });  
     return marker; // Return the marker instance
 }
 
 function createMemberInfoBox(member) {
+    // Create a box element
+    var infoBox = document.createElement('div');
+    infoBox.className = 'info-box';
+    infoBox.onclick = function() {
+        infoBox.style.display = 'none';
+    };
+  
+    // Add CSS styles
+    infoBox.style.position = 'absolute';
+    infoBox.style.backgroundColor = '#f9f9f9';
+    infoBox.style.padding = '20px';
+    infoBox.style.border = '1px solid #d3d3d3';
+    //infoBox.style.borderRadius = '25px';
+    infoBox.style.zIndex = '100';
+    infoBox.style.width = '100%';
+    infoBox.style.height = '47%';
+    infoBox.style.top = '14%';
+
+    // Create a close button
+    var closeButton = document.createElement('span');
+    closeButton.className = 'close-button';
+    closeButton.textContent = 'x';
+    closeButton.onclick = function() {
+        infoBox.style.display = 'none';
+    };
+
+    // Add CSS styles for close button
+    closeButton.style.color = 'black';
+    closeButton.style.float = 'right';
+    closeButton.style.fontSize = '20px';
+    closeButton.style.fontWeight = 'bold';
+
+    // Create content for the box
+    var content = document.createElement('div');
+    content.className = 'content';
+    content.innerHTML = `
+        <img src="${member.image_url}" class="cardImg" alt="Marker Image" style="max-width: 100%;">
+        <h2 style="position: absolute; top: 2%; left: 20%;">${member.name}</h2>
+        <div style="position: absolute; top: 24%; left: 20%;">Location: ${member.location.latitude}, ${member.location.longitude}</div>
+        <p>Status: ${member.status.screen}</p>
+        <p>Speed: ${member.status.speed} mph</p>
+        <div style="background-color: white; position: absolute; width: 14%; height: 20%;left: 2.8%; border-radius: 14px; outline: 2px solid black; top: 76%;">
+        <div class="battLevel"></div>
+        <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png" class="battInfo" alt="Marker Image" style="max-width: 100%;position: absolute; top: -8px; left: 2px; height: 39px;">
+        <p style="position: absolute; left: 57%; top: -8%; font-family: Helvetica; font-weight: 900; font-size: 13px;">${member.status.device.battery_level}%</p>
+        </div>
+    `; // End of InnerHTML
+//https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png
+    // Append close button and content to the box
+    infoBox.appendChild(closeButton);
+    infoBox.appendChild(content);
+
+    // Append the box to the bottomTray
+    var bottomTray = document.getElementById('bottomTray');
+    bottomTray.appendChild(infoBox);
+    infoboxClick();
+}
+
+  
+function createMemberInfoBoxv1(member) {
     // Create a box element
     var infoBox = document.createElement('div');
     infoBox.className = 'info-box';
@@ -431,7 +488,9 @@ function createMemberInfoBox(member) {
     infoBox.style.top = ((mapRect.height - boxHeight) / 2) + 'px';
 
     // Append the box to the body
-    document.body.appendChild(infoBox);
+    //document.body.appendChild(infoBox);
+  var bottomTray = document.getElementById('bottomTray');
+    bottomTray.appendChild(infoBox);
 }
   
 function addMultipleGeofences(geodataArray) {
@@ -501,7 +560,7 @@ function addHexagonv3(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidt
     });
 }
   
-function createMemberInfoBox1(member) {
+function createMemberInfoBoxOLD(member) {
     // Create a box element
     var infoBox = document.createElement('div');
     infoBox.className = 'info-box';
@@ -570,8 +629,8 @@ function createMemberInfoBox1(member) {
     
     addMultipleGeofences(geodataArray);
     
-    var membersData = {
-      id: "1",
+    var membersDataOld = {
+      id: "thx1138",
       name: "Jake Mohl",
       location: {
         latitude: 35.07043,
@@ -593,12 +652,92 @@ function createMemberInfoBox1(member) {
      image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
      badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
    };
-    var marker = addMember(membersData);
+    var membersData = [
+  {
+    id: "thx1138",
+    name: "Jake Mohl",
+    location: {
+      latitude: 35.07043,
+      longitude: -81.96076
+    },
+    status: {
+      screen: "off",
+      location_sharing: "on",
+      isMoving: true,
+      speed: 110,
+      wifi: 'on',
+      device: {
+        screen: "off",
+        wifi: "on",
+        battery_level: 89,
+        charging: 'yes'
+      }
+    },
+    image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+    badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
+  },
+  // Add more members here...
+  {
+    id: "abc123",
+    name: "Jane Doe",
+    location: {
+      latitude: 34.0522,
+      longitude: -118.2437
+    },
+    status: {
+      screen: "on",
+      location_sharing: "off",
+      isMoving: false,
+      speed: 0,
+      wifi: 'off',
+      device: {
+        screen: "on",
+        wifi: "off",
+        battery_level: 62,
+        charging: 'yes'
+      }
+    },
+    image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+    badgeImageUrl: "https://example.com/badge2.png"
+  },
+  {
+    id: "def456",
+    name: "John Smith",
+    location: {
+      latitude: 40.7128,
+      longitude: -74.0060
+    },
+    status: {
+      screen: "on",
+      location_sharing: "on",
+      isMoving: true,
+      speed: 70,
+      wifi: 'on',
+      device: {
+        screen: "on",
+        wifi: "on",
+        battery_level: 78,
+        charging: 'no'
+      }
+    },
+    image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+    badgeImageUrl: "https://example.com/badge3.png"
+  }
+];
+
+    //var marker = addMember(membersData);
+    membersData.forEach(function(member) {
+      addMember(member);
+    });
 
     // Add a click event listener to the marker
+    //marker.getElement().addEventListener('click', function() {
+    //   createMemberInfoBox(membersData);
+    //});
     marker.getElement().addEventListener('click', function() {
-       createMemberInfoBox(membersData);
+      createMemberInfoBox(member);
     });
+
     
     var lat = 35.080000; // Example latitude offset from the geofence
     var lon = -81.950000; // Example longitude offset from the geofence
@@ -630,32 +769,30 @@ function createMemberInfoBox1(member) {
   }// end on map load.
 
 </script>
-<div id="mySidenav" class="sidenav">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
-  <a href="#">About</a>
+<div id="map" style="position: absolute; top: 0px; left: 0px; bottom: 0px; width: 100%;"></div>
+<div id="bottomTray" class="tray" onclick="infoboxClick()">
+  <!-- <a href="#">About</a>
   <a href="#">Services</a>
   <a href="#">Clients</a>
-  <a href="#">Contact</a>
+  <a href="#">Contact</a>-->
 </div>
 
 <!-- <span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="closeNav()"><img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;"></span> -->
-<span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="openNav()">
+<span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="infoboxClick()">
     <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;">
 </span>
 <script>
-function openNav1() {
-  var sidebar = document.getElementById("mySidenav");
-  sidebar.style.width = "300px";
+
+function infoboxClick() {
+    var sidebar = document.getElementById("bottomTray");
+    if (sidebar.style.top === "60%") {
+        console.log('Open');
+        sidebar.style.top = "35%";
+    } else {
+        console.log('Close');
+        sidebar.style.top = "60%";
+    }
 }
-function closeNav() {
-    var sidebar = document.getElementById("mySidenav");
-    sidebar.style.width = "0"; // Set the width to 0
-    //sidebar.style.left = "-300px"; // Move the sidebar off-screen to the left
-}
-  function openNav() {
-    var sidebar = document.getElementById("mySidenav");
-    sidebar.style.width = "300px"; // Set the width to the desired size
-    sidebar.style.transform = "translateX(0)"; // Move the sidebar into view
-}
+
 
 </script>
