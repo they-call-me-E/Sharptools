@@ -246,6 +246,26 @@ function addGeofence(geodata) {
     })
         .setLngLat(geodata.center)
         .addTo(map);
+   // Add a white circle around the marker
+    map.addLayer({
+        id: geodata.geofenceId + '-circle',
+        type: 'circle',
+        source: {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: geodata.center
+                }
+            }
+        },
+        paint: {
+            'circle-radius': 22,
+            'circle-color': '#FFFFFF', // White color
+            'circle-opacity': 1
+        }
+    });
 }
 
   // Function to add a marker with an image and an optional badge, accepting a JSON object as an argument
@@ -408,7 +428,7 @@ function addGeofence(geodata) {
 
 
   
-  function addHexagonv(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth) {
+  function addHexagon(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth) {
     var coordinates = [];
     var angleDeg, angleRad, x, y;
     // Convert size in meters to degrees latitude
@@ -487,8 +507,8 @@ function addGeofence(geodata) {
       id: "thx1138",
       name: "Jake Mohl",
       location: {
-        latitude: 35.17043,
-        longitude: -81.86076
+        latitude: 35.070420,
+        longitude: -81.960750
       },
       status: {
         screen: "off",
@@ -510,8 +530,8 @@ function addGeofence(geodata) {
         id: "thx1138",
         name: "Jake Mohl",
         location: {
-          latitude: 35.17043,
-          longitude: -81.86076,
+          latitude: 35.070420,
+          longitude: -81.96076,
           address: "123 made you look",
           timestamp : "timestamp here"
         },
