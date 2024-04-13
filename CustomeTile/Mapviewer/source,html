@@ -12,171 +12,194 @@
     },
     {"name": "mapToken", "label": "MapBox Access Token", "type": "STRING"}
   ],
-  "name": "Mapviewer v5",
-  "dimensions": {"width": 3, "height": 3}
+  "name": "Mapviewer v1.1",
+  "dimensions": {"height": 3, "width": 3}
 }
 </script>
-
 <meta charset="utf-8">
+
+
 <script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <script src="//cdn.sharptools.io/js/custom-tiles.js"></script>
 <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.js"></script>
 <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
+<!-- Using a CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@latest"></script>
 
 <style>
   .mapboxgl-ctrl-logo {
-      display: none !important;
+    display: none !important;
   }
+
   .mapboxgl-ctrl-bottom-right {
     display: none !important;
   }
+
   .mapboxgl-ctrl-bottom-right
-    /* CSS for the info box */
-    .info-box {
-        position: absolute;
-        z-index: 999;
-        width: 100%; /* Adjust the width as needed */
-        max-height: 200px; /* Adjust the max-height as needed */
-        background-color: white;
-        border: 1px solid #ccc;
-        border-radius: 25px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        padding: 10px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        top: 14%;
-    }
 
-    .info-box h2 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 18px;
-    }
+  /* CSS for the info box */
+  .info-box {
+    position: absolute;
+    z-index: 999;
+    width: 100%;
+    /* Adjust the width as needed */
+    max-height: 200px;
+    /* Adjust the max-height as needed */
+    background-color: #414141;
+    background-color: #555555;
+    border: 1px solid #ccc;
+    border-radius: 25px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    top: 14%;
+  }
 
-    .info-box p {
-        margin: 5px 0;
-    }
+  .info-box h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
 
-    .close-button {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        cursor: pointer;
-        color: black;
-        float: right;
-        font-size: 30px;
-        font-weight: bold;
-    }
-    .content {
-        color: black; /* Set text color to black */
-        font-size: 16px; /* Set font size */
-        line-height: 1.5; /* Set line height for better readability */
-    }
-    .badge {
-       width: 30px;
-       height: 30px;
-       border-radius: 50%;
-       border: 2px solid black;
-       background-color: #ffffff;
-       /* position: absolute; */
-       position: relative;
-       width: 100%;
-      
-       top: -75px;
-       left: 0px;
-       display: flex;
-       justify-content: center;
-       align-items: center;
-       background-image: url('https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png');
-       background-size: contain;
-       background-repeat: no-repeat; /* Prevent tiling */
-       background-position: center; /* Center the image */
-       background-position: left center; /* Position image on the left */
-      justify-content: space-between;
-    }
+  .info-box p {
+    margin: 5px 0;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    color: black;
+    float: right;
+    font-size: 30px;
+    font-weight: bold;
+  }
+  .infobox_content{
+    color: #cfcfcf;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .content {
+    color: black;
+    /* Set text color to black */
+    font-size: 16px;
+    /* Set font size */
+    line-height: 1.5;
+    /* Set line height for better readability */
+  }
+
+  .badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid black;
+    background-color: #ffffff;
+    /* position: absolute; */
+    position: relative;
+    width: 100%;
+    top: -75px;
+    left: 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    /* Prevent tiling */
+    background-position: center;
+    /* Center the image */
+    background-position: left center;
+    /* Position image on the left */
+    justify-content: space-between;
+  }
+
   .badge-text {
-    margin-right: 5px; /* Add some space between the image and the text */
-    font-size: 12px; /* Adjust font size as needed */
+    margin-right: 5px;
+    /* Add some space between the image and the text */
+    font-size: 12px;
+    /* Adjust font size as needed */
     font-family: Helvetica;
-    color: black; /* Set the text color to black */
+    color: black;
+    /* Set the text color to black */
     font-weight: 900;
     position: absolute;
     top: 25%;
     right: 0;
   }
-/* The side navigation menu */
 
-.tray {
+  /* The side navigation menu */
+  .tray {
     height: 35%;
-    width: 100%; /* Set initial width to 0 */
+    width: 100%;
+    /* Set initial width to 0 */
     position: fixed;
     z-index: 1;
-    top: 60%; 
+    top: 60%;
     left: 0;
-    background-color: #111;
+    background-color: #222222;
     overflow-x: hidden;
     /* padding-top: 60px; */
     transition: 0.5s;
-    transform: translateY(100%); /* Move the sidebar off-screen */
+    transform: translateY(100%);
+    /* Move the sidebar off-screen */
     border-radius: 25px;
-    
-}
-.cardImg{
-    height: 100px;  
+  }
+
+  .cardImg {
+    height: 100px;
     position: absolute;
     top: 5%;
     left: 0;
-}  
-.battLevel{
+  }
+
+  .battLevel {
     background-color: #65fe08;
-    width: 27px;
-    height: 20px;
+    width: 27%;
+    height: 49%;
     position: absolute;
-    top: 10%;
+    top: 27%;
     left: 10%;
-}
+  }
 </style>
 
-
-
 <script>
-  stio.ready(function(data){
-console.log('The user specified token is', data.settings.token)
-});
   var mLat = 35.18969231143789;
   var mLon = -82.04842360357094;
   var mZoom = 8;
   var maptoken = '';
   var mapSettings = {
-      mLat: 35.18969231143789,
-      mLon: -82.04842360357094,
-      mZoom: 8,
-      mapToken: ''
-    };
-   
-  stio.ready((data)=>{
-    console.log("Starting MapViewer Init [shortyyy]");
-    console.log("stio library is ready with token", data.settings.mapToken);        
-    if(data.settings.mapToken == null){
-        console.log("Please configure the authorization token and at least 1 device");
-        //return;
-    }
-    else{            
-        mapSettings.mapToken = data.settings.mapToken;
-        mapSettings.mLat = data.settings.mLat;
-        mapSettings.mLon = data.settings.mLon;
-        mapSettings.mZoom = data.settings.mZoom;
-    } 
-    console.log('mLat: '+ mapSettings.mLat);
-    console.log('mlon: '+ mapSettings.mLon);
-    console.log('bypas get token',data.settings.mapToken);
-    console.log('token = '+ mapSettings.mapToken)
-    //console.log('Map Token : 1234');
- 
-    
+    mLat: 35.18969231143789,
+    mLon: -82.04842360357094,
+    mZoom: 8,
+    mapToken: ''
+  };
+  var tray_oc = false;
+  console.log(tray_oc);
+  stio.ready(function(data) {
+    console.log('The user specified token is', data.settings.token)
   });
-  console.log('Token : '+mapSettings.mapToken);
+  stio.ready((data) => {
+    console.log("Starting MapViewer Init [shortyyy]");
+    console.log("stio library is ready with token", data.settings.mapToken);
+    if (data.settings.mapToken == null) {
+      console.log("Please configure the authorization token and at least 1 device");
+      //return;
+    } else {
+      mapSettings.mapToken = data.settings.mapToken;
+      mapSettings.mLat = data.settings.mLat;
+      mapSettings.mLon = data.settings.mLon;
+      mapSettings.mZoom = data.settings.mZoom;
+    }
+    console.log('mLat: ' + mapSettings.mLat);
+    console.log('mlon: ' + mapSettings.mLon);
+    console.log('bypas get token', data.settings.mapToken);
+    console.log('token = ' + mapSettings.mapToken)
+    //console.log('Map Token : 1234');
+  });
+  console.log('Token : ' + mapSettings.mapToken);
   mapboxgl.accessToken = "pk.eyJ1IjoidGhleWNhbGxtZWUiLCJhIjoiY2xhZXF6anQxMHgzazNxczNzd2I5em10dyJ9.fa-pBQ_2cMg9H2fD-FBCDg";
   //mapboxgl.accessToken = mapSettings.mapToken;
   const map = new mapboxgl.Map({
@@ -186,111 +209,56 @@ console.log('The user specified token is', data.settings.token)
     center: [mLon, mLat],
     showLogo: false
   });
-  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-  console.log(mapboxgl.accessToken); 
- 
+  map.addControl(new mapboxgl.NavigationControl({
+    showCompass: false
+  }), 'top-right');
+  console.log(mapboxgl.accessToken);
+
+  
+
+  
   // Function to update the marker's position
   function updateMarkerPosition(marker, newLng, newLat) {
     marker.setLngLat([newLng, newLat]);
   }
-
 function addGeofence(geodata) {
-    var radiusInMeters = geodata.radiusInFeet * 0.3048; // Convert feet to meters
+    var center = geodata.center;
+    var radiusInMeters = 200; // Set the radius of the circle in meters
+    var options = { steps: 64, units: 'meters' };
+    var circle = turf.circle(center, radiusInMeters, options);
 
-    // Function to calculate the circle radius based on the map's zoom level
-    function calculateRadius(zoom) {
-        var baseZoom = 12;
-        var baseRadius = radiusInMeters / 2;
-        var scaleFactor = Math.pow(2, zoom - baseZoom);
-        return baseRadius * scaleFactor;
-    }
-
-    // Initial circle radius
-    var initialRadius = calculateRadius(map.getZoom());
-
-    // Add the outer geofence circle
+    // Add the circle to the map as a GeoJSON feature
     map.addLayer({
         id: geodata.geofenceId,
-        type: 'circle',
+        type: 'fill',
         source: {
             type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: geodata.center
-                }
-            }
+            data: circle
         },
         paint: {
-            'circle-radius': initialRadius,
-            'circle-color': '#007cbf',
-            'circle-opacity': 0.25
+            'fill-color': '#007cbf', // Green with 75% transparency
+            'fill-opacity': 0.25
         }
     });
-
-    // Update the circle radius when the map is zoomed
-    map.on('zoom', function () {
-        var newRadius = calculateRadius(map.getZoom());
-        map.setPaintProperty(geodata.geofenceId, 'circle-radius', newRadius);
-    });
-
-    // Add the red inner circle
-    map.addLayer({
-        id: geodata.geofenceId + '-inner',
-        type: 'circle',
-        source: {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: geodata.center
-                }
-            }
-        },
-        paint: {
-            'circle-radius': 18,
-            'circle-color': '#ff0000' // Red color
-        }
-    });
-
-    // Add the default marker
-    const defaultMarker = new mapboxgl.Marker({
+  const defaultMarker = new mapboxgl.Marker({
         anchor: 'bottom', // Anchor the marker to the bottom
         offset: [0,24] // Offset the marker to align with the circle
     })
         .setLngLat(geodata.center)
         .addTo(map);
-
-    // Add a red circle around the marker
-    map.addLayer({
-        id: geodata.geofenceId + '-circle',
-        type: 'circle',
-        source: {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: geodata.center
-                }
-            }
-        },
-        paint: {
-            'circle-radius': 22,
-            'circle-color': '#FFFFFF', // Red color
-            'circle-opacity': 1
-        }
-    });
 }
-  
-// Function to add a marker with an image and an optional badge, accepting a JSON object as an argument
-function addMember(membersData) {
-    var el = document.createElement('div');
-    //el.className = 'marker';
-    el.className = 'marker ' + membersData.id; // Assigning the member's ID as a class name
 
+  // Function to add a marker with an image and an optional badge, accepting a JSON object as an argument
+  function addMember(membersData) {
+    function flytoMemberLocation() {
+      map.flyTo({
+        center: [membersData.location.longitude, membersData.location.latitude],
+        zoom: 12,
+        essential: true
+      })
+    }
+    var el = document.createElement('div');
+    el.className = 'marker ' + membersData.id; // Assigning the member's ID as a class name
     // Create the circular part of the pin
     var circle = document.createElement('div');
     circle.style.width = '60px';
@@ -301,22 +269,18 @@ function addMember(membersData) {
     circle.style.top = '50%';
     circle.style.left = '50%';
     circle.style.transform = 'translate(-50%, -100%)'; // Center and raise the circle above the marker's point
-
     // Create an image element for the marker image
     var img = document.createElement('img');
     img.src = membersData.image_url;
     img.style.width = '100%'; // Adjust the size of the image as needed
     img.style.height = '100%';
     img.style.borderRadius = '50%'; // Make the image circular
-
     // Apply grayscale filter if screen is 'off'
     if (membersData.status.location_sharing === 'off') {
-        img.style.filter = 'grayscale(100%)';
+      img.style.filter = 'grayscale(100%)';
     }
-
     // Add the image to the circle
     circle.appendChild(img);
-
     // Create the tail of the pin
     var tail = document.createElement('div');
     tail.style.width = '0';
@@ -328,10 +292,8 @@ function addMember(membersData) {
     tail.style.left = '50%';
     tail.style.top = '-1px';
     tail.style.transform = 'translateX(-50%)'; // Center the tail below the circle
-
     el.appendChild(tail);
     el.appendChild(circle);
-
     // Add a badge
     var badge = document.createElement('div');
     badge.className = 'badge';
@@ -348,451 +310,345 @@ function addMember(membersData) {
     badge.style.alignItems = 'center'; // Center content vertically
     badge.style.backgroundImage = `url(${badgeImageUrl})`; // Set the background image URL
     badge.style.backgroundSize = 'contain'; // Maintain aspect ratio without stretching
-
     // Add speed text if present
     if (membersData.status.speed !== 0) {
-        var speedText = document.createElement('span');
-        speedText.className = 'badge-text';
-        speedText.textContent = membersData.status.speed + ' mph'; // Assuming speed is in mph
-        //speedText.style.fontSize = '12px'; // Adjust font size as needed
-        speedText.style.marginLeft = '5px'; // Add some space between the image and the text
-        speedText.style.color = 'black'; // Set the text color to black
-        badge.appendChild(speedText);
+      var speedText = document.createElement('span');
+      speedText.className = 'badge-text';
+      speedText.textContent = membersData.status.speed + ' mph'; // Assuming speed is in mph
+      //speedText.style.fontSize = '12px'; // Adjust font size as needed
+      speedText.style.marginLeft = '5px'; // Add some space between the image and the text
+      speedText.style.color = 'black'; // Set the text color to black
+      badge.appendChild(speedText);
     }
-
     el.appendChild(badge);
-
     // Change the background color of the marker
     el.style.backgroundColor = 'blue';
-
-    var marker = new mapboxgl.Marker(el)
-        .setLngLat([membersData.location.longitude, membersData.location.latitude])
-        .addTo(map);
-
-     marker.getElement().addEventListener('click', function() {
-       createMemberInfoBox(membersData);
-     });  
+    var marker = new mapboxgl.Marker(el).setLngLat([membersData.location.longitude, membersData.location.latitude]).addTo(map);
+    marker.getElement().addEventListener('click', function() {
+      createMemberInfoBox(membersData);
+      flytoMemberLocation();
+    });
     return marker; // Return the marker instance
-}
+  }
 
-function createMemberInfoBox(member) {
+  function createMemberInfoBox(member) {
     // Create a box element
+  let batteryIcon;
+    if (member.status.device.charging === true) {
+      batteryIcon = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png';
+    } else {
+        batteryIcon = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery.png';
+      }
+
+    
     var infoBox = document.createElement('div');
     infoBox.className = 'info-box';
     infoBox.onclick = function() {
-        infoBox.style.display = 'none';
+      infoBox.style.display = 'none';
     };
-  
     // Add CSS styles
     infoBox.style.position = 'absolute';
-    infoBox.style.backgroundColor = '#f9f9f9';
+    infoBox.style.backgroundColor = '#414141';
     infoBox.style.padding = '20px';
-    infoBox.style.border = '1px solid #d3d3d3';
+    //infoBox.style.border = '1px solid #d3d3d3';
     //infoBox.style.borderRadius = '25px';
     infoBox.style.zIndex = '100';
     infoBox.style.width = '100%';
     infoBox.style.height = '47%';
     infoBox.style.top = '14%';
-
     // Create a close button
     var closeButton = document.createElement('span');
     closeButton.className = 'close-button';
     closeButton.textContent = 'x';
     closeButton.onclick = function() {
-        infoBox.style.display = 'none';
+      infoBox.style.display = 'none';
     };
-
     // Add CSS styles for close button
     closeButton.style.color = 'black';
     closeButton.style.float = 'right';
     closeButton.style.fontSize = '20px';
     closeButton.style.fontWeight = 'bold';
-
     // Create content for the box
     var content = document.createElement('div');
-    content.className = 'content';
+    content.className = 'infobox_content';
     content.innerHTML = `
-        <img src="${member.image_url}" class="cardImg" alt="Marker Image" style="max-width: 100%;">
-        <h2 style="position: absolute; top: 2%; left: 20%;">${member.name}</h2>
-        <div style="position: absolute; top: 24%; left: 20%;">Location: ${member.location.latitude}, ${member.location.longitude}</div>
-        <p>Status: ${member.status.screen}</p>
-        <p>Speed: ${member.status.speed} mph</p>
-        <div style="background-color: white; position: absolute; width: 14%; height: 20%;left: 2.8%; border-radius: 14px; outline: 2px solid black; top: 76%;">
-        <div class="battLevel"></div>
-        <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png" class="battInfo" alt="Marker Image" style="max-width: 100%;position: absolute; top: -8px; left: 2px; height: 39px;">
-        <p style="position: absolute; left: 57%; top: -8%; font-family: Helvetica; font-weight: 900; font-size: 13px;">${member.status.device.battery_level}%</p>
-        </div>
+        
+				<img src="${member.image_url}" class="cardImg" alt="Marker Image" style="max-width: 100%;">
+					<h2 style="position: absolute; top: 2%; left: 20%;">${member.name}</h2>
+					<div style="position: absolute; top: 24%; left: 20%;">Location: ${member.location.latitude}, ${member.location.longitude}</div>
+					<!-- <p>Screen: ${member.status.screen}</p> -->
+					<!-- <p>Speed: ${member.status.speed} mph</p> -->
+					<div style="background-color: white; position: absolute; width: 14%; height: 20%;left: 2.8%; border-radius: 14px; outline: 2px solid black; top: 76%;">
+						<div class="battLevel"></div>
+						<img src=${batteryIcon} class="battInfo" alt="Marker Image" style="max-width: 100%;position: absolute; top: -8px; left: 2px; height: 39px;">
+							<p style="position: absolute; left: 54%; top: -2%; font-family: Helvetica; font-weight: 900; font-size: 10px;">${member.status.device.battery_level}%</p>
+						</div>
     `; // End of InnerHTML
-//https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png
     // Append close button and content to the box
     infoBox.appendChild(closeButton);
     infoBox.appendChild(content);
-
     // Append the box to the bottomTray
     var bottomTray = document.getElementById('bottomTray');
     bottomTray.appendChild(infoBox);
-    infoboxClick();
-}
+    var bottomTray = document.getElementById('bottomTray');
+    if (tray_oc == false) {
+      infoboxClick();
+    }
+  }
 
-  
-function createMemberInfoBoxv1(member) {
-    // Create a box element
-    var infoBox = document.createElement('div');
-    infoBox.className = 'info-box';
-    infoBox.onclick = function() {
-        infoBox.style.display = 'none';
-    };
-  
-    // Add CSS styles
-    infoBox.style.position = 'absolute';
-    infoBox.style.backgroundColor = '#f9f9f9';
-    infoBox.style.padding = '20px';
-    infoBox.style.border = '1px solid #d3d3d3';
-    infoBox.style.borderRadius = '25px';
-    infoBox.style.zIndex = '100';
-
-    // Create a close button
-    var closeButton = document.createElement('span');
-    closeButton.className = 'close-button';
-    closeButton.textContent = 'x';
-    closeButton.onclick = function() {
-        infoBox.style.display = 'none';
-    };
-
-    // Add CSS styles for close button
-    closeButton.style.color = 'black';
-    closeButton.style.float = 'right';
-    closeButton.style.fontSize = '20px';
-    closeButton.style.fontWeight = 'bold';
-
-    // Create content for the box
-    var content = document.createElement('div');
-    content.className = 'content';
-    content.innerHTML = `
-        <h2>${member.name}</h2>
-        <p>Location: ${member.location.latitude}, ${member.location.longitude}</p>
-        <p>Status: ${member.status.screen}</p>
-        <p>Speed: ${member.status.speed} mph</p>
-    `;
-
-    // Append close button and content to the box
-    infoBox.appendChild(closeButton);
-    infoBox.appendChild(content);
-
-    // Position the info box in the center of the map
-    var mapContainer = document.getElementById('map');
-    var mapRect = mapContainer.getBoundingClientRect();
-    var boxWidth = 300; // Adjust as needed
-    var boxHeight = 200; // Adjust as needed
-    infoBox.style.left = ((mapRect.width - boxWidth) / 2) + 'px';
-    infoBox.style.top = ((mapRect.height - boxHeight) / 2) + 'px';
-
-    // Append the box to the body
-    //document.body.appendChild(infoBox);
-  var bottomTray = document.getElementById('bottomTray');
-    bottomTray.appendChild(infoBox);
-}
-  
-function addMultipleGeofences(geodataArray) {
-    geodataArray.forEach(function (geodata) {
-        addGeofence(geodata);
+  function addMultipleGeofences(geodataArray) {
+    geodataArray.forEach(function(geodata) {
+      addGeofence(geodata);
     });
-}
+  }
 
-function metersToLongitudeDegrees(meters, atLatitude) {
+  function metersToLongitudeDegrees(meters, atLatitude) {
     return meters / (111.32 * Math.cos(atLatitude * Math.PI / 180));
-}
+  }
 
-function addHexagonv3(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth) {
+
+  
+  function addHexagonv(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth) {
     var coordinates = [];
     var angleDeg, angleRad, x, y;
-
     // Convert size in meters to degrees latitude
     var latDelta = sizeInMeters / 111320; // Approximate conversion: 1 degree = 111320 meters
-
     for (var i = 0; i < 6; i++) {
-        angleDeg = 60 * i;
-        angleRad = (angleDeg * Math.PI) / 180;
-        x = lon + latDelta * Math.cos(angleRad);
-        y = lat + latDelta * Math.sin(angleRad);
-        coordinates.push([x, y]);
+      angleDeg = 60 * i+90;
+      angleRad = (angleDeg * Math.PI) / 180;
+      x = lon + latDelta * Math.cos(angleRad);
+      y = lat + latDelta * Math.sin(angleRad);
+      coordinates.push([x, y]);
     }
     coordinates.push(coordinates[0]); // Close the polygon
-
     map.addLayer({
-        id: hexagonId + '-fill',
-        type: 'fill',
-        source: {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'Polygon',
-                    coordinates: [coordinates]
-                }
-            }
-        },
-        layout: {},
-        paint: {
-            'fill-color': 'yellow',
-            'fill-opacity': 0.5
+      id: hexagonId + '-fill',
+      type: 'fill',
+      source: {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [coordinates]
+          }
         }
+      },
+      layout: {},
+      paint: {
+        'fill-color': '#007cbf',
+        'fill-opacity': 0.5
+      }
     });
-
     map.addLayer({
-        id: hexagonId + '-line',
-        type: 'line',
-        source: {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'Polygon',
-                    coordinates: [coordinates]
-                }
-            }
-        },
-        layout: {},
-        paint: {
-            'line-color': borderColor,
-            'line-width': borderWidth
+      id: hexagonId + '-line',
+      type: 'line',
+      source: {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [coordinates]
+          }
         }
+      },
+      layout: {},
+      paint: {
+        'line-color': borderColor,
+        'line-width': borderWidth
+      }
     });
-}
-  
-function createMemberInfoBoxOLD(member) {
-    // Create a box element
-    var infoBox = document.createElement('div');
-    infoBox.className = 'info-box';
-    
-    // Create a close button
-    var closeButton = document.createElement('span');
-    closeButton.className = 'close-button';
-    closeButton.textContent = 'x';
-    closeButton.onclick = function() {
-        infoBox.style.display = 'none';
-    };
-    
-    // Create content for the box
-    var content = document.createElement('div');
-    content.className = 'content';
-    content.innerHTML = `
-        <h2>${member.name}</h2>
-        <p>Location: ${member.location.latitude}, ${member.location.longitude}</p>
-        <p>Status: ${member.status.screen}</p>
-        <p>Speed: ${member.status.speed} mph</p>
-    `;
-    
-    // Append close button and content to the box
-    infoBox.appendChild(closeButton);
-    infoBox.appendChild(content);
-    
-    // Position the info box in the center of the map
-    var mapContainer = document.getElementById('map');
-    var mapRect = mapContainer.getBoundingClientRect();
-    var boxWidth = 300; // Adjust as needed
-    var boxHeight = 200; // Adjust as needed
-    infoBox.style.left = ((mapRect.width - boxWidth) / 2) + 'px';
-    infoBox.style.top = ((mapRect.height - boxHeight) / 2) + 'px';
-    
-    // Append the box to the body
-    document.body.appendChild(infoBox);
-}
+  }
+
+
   // Define the badge URL as a constant
   const badgeImageUrl = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png';
-
-  var geodataArray = [
-    {
-        center: [-81.960750, 35.070420],
-        radiusInFeet: 100,
-        geofenceId: 'geofence1',
-        pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
-    },
-    {
-        center: [-81.950000, 35.080000],
-        radiusInFeet: 150,
-        geofenceId: 'geofence2',
-        pinImageUrl: ''
-    }
-];
-
-
+  var geodataArray = [{
+    center: [-81.960750, 35.070420],
+    radiusInFeet: 230,
+    geofenceId: 'geofence1',
+    pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
+  }, {
+    center: [-81.950000, 35.080000],
+    radiusInFeet: 150,
+    geofenceId: 'geofence2',
+    pinImageUrl: ''
+  }];
   map.on('load', function() {
-    
     var geofenceData = {
       center: [-81.960750, 35.070420],
       radiusInFeet: 100,
       geofenceId: 'geofence1',
       pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
     };
-
-    
     addMultipleGeofences(geodataArray);
-    
     var membersDataOld = {
       id: "thx1138",
       name: "Jake Mohl",
       location: {
-        latitude: 35.07043,
-        longitude: -81.96076
+        latitude: 35.17043,
+        longitude: -81.86076
       },
-     status: {
-       screen: "off",
-       location_sharing: "on",
-       isMoving: true,
-       speed: 110,
-       wifi: 'on',
-         device: {
-           screen: "off",
-           wifi: "on",
-           batter_level: 89,
-           charging: 'yes'
-         }
-     },
-     image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
-     badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
-   };
-    var membersData = [
-  {
-    id: "thx1138",
-    name: "Jake Mohl",
-    location: {
-      latitude: 35.07043,
-      longitude: -81.96076
-    },
-    status: {
-      screen: "off",
-      location_sharing: "on",
-      isMoving: true,
-      speed: 110,
-      wifi: 'on',
-      device: {
+      status: {
         screen: "off",
-        wifi: "on",
-        battery_level: 89,
-        charging: 'yes'
+        location_sharing: "on",
+        isMoving: true,
+        speed: 110,
+        wifi: 'on',
+        device: {
+          screen: "off",
+          wifi: "on",
+          batter_level: 89,
+          charging: true
+        }
+      },
+      image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+      badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
+    };
+    var membersData = [{
+        id: "thx1138",
+        name: "Jake Mohl",
+        location: {
+          latitude: 35.17043,
+          longitude: -81.86076,
+          address: "123 made you look",
+          timestamp : "timestamp here"
+        },
+        status: {
+          screen: "off",
+          location_sharing: "on",
+          isMoving: true,
+          speed: 110,
+          wifi: 'on',
+          device: {
+            screen: "off",
+            wifi: "on",
+            battery_level: 100,
+            charging: true
+          }
+        },
+        image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+        badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
+      },
+      // Add more members here...
+      {
+        id: "abc123",
+        name: "Jane Doe",
+        location: {
+          latitude: 34.0522,
+          longitude: -118.2437,
+          address: "123 made you look",
+          timestamp : "timestamp here"
+        },
+        status: {
+          screen: "on",
+          location_sharing: "off",
+          isMoving: false,
+          speed: 0,
+          wifi: 'off',
+          device: {
+            screen: "on",
+            wifi: "off",
+            battery_level: 62,
+            charging: true
+          }
+        },
+        image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+        badgeImageUrl: "https://example.com/badge2.png"
+      }, {
+        id: "def456",
+        name: "John Smith",
+        location: {
+          latitude: 40.7128,
+          longitude: -74.0060,
+          address: "123 made you look",
+          timestamp : "timestamp here"
+        },
+        status: {
+          screen: "on",
+          location_sharing: "on",
+          isMoving: true,
+          speed: 70,
+          wifi: 'on',
+          device: {
+            screen: "on",
+            wifi: "on",
+            battery_level: 78,
+            charging: false
+          }
+        },
+        image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+        badgeImageUrl: "https://example.com/badge3.png"
       }
-    },
-    image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
-    badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
-  },
-  // Add more members here...
-  {
-    id: "abc123",
-    name: "Jane Doe",
-    location: {
-      latitude: 34.0522,
-      longitude: -118.2437
-    },
-    status: {
-      screen: "on",
-      location_sharing: "off",
-      isMoving: false,
-      speed: 0,
-      wifi: 'off',
-      device: {
-        screen: "on",
-        wifi: "off",
-        battery_level: 62,
-        charging: 'yes'
-      }
-    },
-    image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
-    badgeImageUrl: "https://example.com/badge2.png"
-  },
-  {
-    id: "def456",
-    name: "John Smith",
-    location: {
-      latitude: 40.7128,
-      longitude: -74.0060
-    },
-    status: {
-      screen: "on",
-      location_sharing: "on",
-      isMoving: true,
-      speed: 70,
-      wifi: 'on',
-      device: {
-        screen: "on",
-        wifi: "on",
-        battery_level: 78,
-        charging: 'no'
-      }
-    },
-    image_url: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
-    badgeImageUrl: "https://example.com/badge3.png"
-  }
-];
-
+    ];
     //var marker = addMember(membersData);
     membersData.forEach(function(member) {
       addMember(member);
     });
-
     // Add a click event listener to the marker
     //marker.getElement().addEventListener('click', function() {
     //   createMemberInfoBox(membersData);
     //});
-    marker.getElement().addEventListener('click', function() {
-      createMemberInfoBox(member);
-    });
+    console.log('here1');
+    // marker.getElement().addEventListener('click', function() {
+    //  createMemberInfoBox(member);
+    //});
+    
 
-    
-    var lat = 35.080000; // Example latitude offset from the geofence
-    var lon = -81.950000; // Example longitude offset from the geofence
-    var hexagonId = 'hexagon1'; // Unique ID for the hexagon layer
-    var sizeInMeters = 1000; // Example size of the hexagon in meters
-    var borderColor = 'red'; // Border color
-    var borderWidth = 2; // Border width in pixels
-    
+
+ 
+   // var lat = 35.080000; // Example latitude offset from the geofence
+   // var lon = -81.950000; // Example longitude offset from the geofence
+   // var hexagonId = 'hexagon1'; // Unique ID for the hexagon layer
+   // var sizeInMeters = 1000; // Example size of the hexagon in meters
+   // var borderColor = 'red'; // Border color
+    //var borderWidth = 2; // Border width in pixels
     //var hexagonId = 'hexagon1'; // Unique ID for the hexagon layer
-    //addHexagonv3(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth);
+     console.log('attepting to hex');
+    // addHexagonv3(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth);
+// Sample parameters
+const lat = 35.070420;
+const lon = -81.960750; 
+const sizeInMeters = 260;
+const hexagonId = 'myHexagon';
+const fillColor = 'orange';
+const fillOpacity = 0.75;
+const borderColor = 'black';
+const borderWidth = 1;
 
-   });
+// Call the function
+addHexagon(lat, lon, sizeInMeters, hexagonId, fillColor, fillOpacity, borderColor, borderWidth);
+
+    //drawHex(lat,lon);
+    console.log('hex function complete.');
+
+  });// Example usage
+
+
+ 
   
+  function infoboxClick() {
+    var sidebar = document.getElementById("bottomTray");
+    if (tray_oc == false) {
+      sidebar.style.top = "35%";
+      tray_oc = true;
+    } else {
+      sidebar.style.top = "60%";
+      tray_oc = false;
+    }
+  }
 
-  // Function to simulate marker movement
-  function simulateMovement(marker, step, interval) {
-    var lng = marker.getLngLat().lng;
-    var lat = marker.getLngLat().lat;
 
-    setInterval(() => {
-      lng += step;
-      lat += step;
-      updateMarkerPosition(marker, lng, lat);
-    }, interval);
 
-    
-   // addHexagon(lat, lon, size, hexagonId);
-    
-  }// end on map load.
+// Example usage
 
 </script>
 <div id="map" style="position: absolute; top: 0px; left: 0px; bottom: 0px; width: 100%;"></div>
 <div id="bottomTray" class="tray" onclick="infoboxClick()">
-  <!-- <a href="#">About</a>
-  <a href="#">Services</a>
-  <a href="#">Clients</a>
-  <a href="#">Contact</a>-->
+  <!-- <a href="#">About</a><a href="#">Services</a><a href="#">Clients</a><a href="#">Contact</a>-->
 </div>
-
 <!-- <span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="closeNav()"><img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;"></span> -->
 <span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="infoboxClick()">
-    <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;">
+  <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;">
 </span>
-<script>
-
-function infoboxClick() {
-    var sidebar = document.getElementById("bottomTray");
-    if (sidebar.style.top === "60%") {
-        console.log('Open');
-        sidebar.style.top = "35%";
-    } else {
-        console.log('Close');
-        sidebar.style.top = "60%";
-    }
-}
-
-
-</script>
