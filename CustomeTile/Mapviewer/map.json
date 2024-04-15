@@ -1,1 +1,25 @@
-123456789
+{
+  "id": "191a0a72-b769-417a-98e1-a9dd38f569e9",
+  "name": "Jake Mohl",
+  "avatar":"%avatar_json",
+  "isadmin":true,
+  "relation":"Dad",
+  "creationdate":null,
+  "location": {
+    "latitude": 35.3194015,
+    "longitude": -81.9356779,
+    "address": "1016 Poors Ford Rd, Rutherfordton, NC 28139, USA",
+    "timestamp": "2024-04-15T23:08:39.248Z"
+  },
+  "status": {
+  "location_sharing":true,
+    "isMoving": true ,
+    "speed": 44,
+    "device": {
+      "screen": true,
+      "wifi": true,
+      "battery_level": 57,
+      "charging": false
+    }
+  }
+}
