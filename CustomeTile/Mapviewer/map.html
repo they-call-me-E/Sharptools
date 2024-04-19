@@ -12,6 +12,7 @@
     <!-- Using a CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@latest"></script>
     <style>
+        @keyframes fadein {from {opacity: 0;} to {opacity: 1;}}
         .mapboxgl-ctrl-logo {
             display: none !important;
         }
@@ -23,12 +24,16 @@
         /* CSS for the info box */
         .mapboxgl-popup {
             max-width: 350px !important;
+            animation: fadein 0.2s;
             /* background-color: #414141; */
            
         }
         .mapboxgl-popup-content {
             /* background-color: #555555; */
             background-color: #414141;
+            border-radius: 20px;
+            box-shadow: 0 3px 14px rgba(0,0,0,0.4
+            );
         }
 
         .mapboxgl-popup-close-button {
@@ -191,14 +196,17 @@
         
         .battLevel {
             background-color: #65fe08;
-            width: 27%;
-            height: 20px;
+            width: 8%;
+            height: 1.3vh;
             padding:1px;
             margin-top: 10px;
             margin-left: 10px;
-            /* position: absolute; */
-            /* top: 20%;
-            left: 10%; */
+            position: absolute; 
+            top: 7%;
+            left: -2%; 
+        }
+        .batticon {
+          z-index: 1;
         }
         .badge {
             width: 100px;
@@ -652,7 +660,7 @@
                 <div class="header-content">
                     <div style="background-color: white; height: 20%; border-radius: 14px; outline: 2px solid black; ">
                         <div class="battLevel"></div>
-                        <img src=${batteryIcon} class="battInfo" alt="Marker Image" style="max-width: 100%; height: 39px;">
+                        <img src=${batteryIcon} class="batticon" alt="Marker Image" style="max-width: 100%; height: 39px;">
                         <p style="font-family: Helvetica; font-weight: 900; font-size: 10px;">${member.status.device.battery_level}%</p>
                     </div>
                 </div>
