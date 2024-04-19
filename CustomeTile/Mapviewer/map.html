@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hex Grid Map</title>
+    <script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1">
+    <script src="//cdn.sharptools.io/js/custom-tiles.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.js"></script>
+    <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
+    <!-- Using a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@latest"></script>
+    <style>
+        .mapboxgl-ctrl-logo {
+            display: none !important;
+        }
+        
+        .mapboxgl-ctrl-bottom-right {
+            display: none !important;
+        }
+        
+        /* CSS for the info box */
+        .mapboxgl-popup {
+            max-width: 350px !important;
+            /* background-color: #414141; */
+           
+        }
+        .mapboxgl-popup-content {
+            /* background-color: #555555; */
+            background-color: #414141;
+        }
+
+        .mapboxgl-popup-close-button {
+            font-size: 18px;
+            color:#ddd;
+        }
+
+        .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+            border-top-color:#414141
+        }
+
+        .info-box {
+            position: absolute;
+            z-index: 999;
+            width: 100%;
+            /* Adjust the width as needed */
+            max-height: 200px;
+            /* Adjust the max-height as needed */
+            background-color: #414141;
+            background-color: #555555;
+            border: 1px solid #ccc;
+            border-radius: 25px !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            top: 14%;
+        }
+        
+        .infobox_content h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .infobox_content p {
+            margin: 5px 0;
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            color: black;
+            float: right;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+    
+        .infobox_content{
+            color: #cfcfcf;
+            font-size: 16px;
+            line-height: 1.5;
+
+            display: flex;
+        }
+        .header-content {
+            position: relative;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .header-content > div {
+            display: flex;
+        }
+
+        .content {
+            color: black;
+            /* Set text color to black */
+            font-size: 16px;
+            /* Set font size */
+            line-height: 1.5;
+            /* Set line height for better readability */
+        }
+        
+        .badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid black;
+            background-color: #ffffff;
+            /* position: absolute; */
+            position: relative;
+            width: 100%;
+            top: -75px;
+            left: 0px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: url('https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            /* Prevent tiling */
+            background-position: center;
+            /* Center the image */
+            background-position: left center;
+            /* Position image on the left */
+            justify-content: space-between;
+        }
+        
+        .badge-text {
+            margin-right: 5px;
+            /* Add some space between the image and the text */
+            font-size: 12px;
+            /* Adjust font size as needed */
+            font-family: Helvetica;
+            color: black;
+            /* Set the text color to black */
+            font-weight: 900;
+            position: absolute;
+            top: 25%;
+            right: 0;
+            margin-left: 5px;
+        }
+        .traycontainer{
+            /* background: white; */
+            position: absolute;
+            height: 40%;
+            width: 100%;
+            position: fixed;
+            z-index: 95%;
+            left: 0;
+            transform: translateY(100%);
+            top: 57%;
+            transition: top 0.3s ease; /* Add this line for smooth animation */
+        
+        }
+          /* The side navigation menu */
+        .tray {
+            height: 95%;
+            width: 100%;
+            position: absolute;
+            z-index: 1;
+            top: -87%;
+            left: 0;
+            background-color: #222222;
+            overflow-x: hidden;
+            /* padding-top: 60px; */
+            transition: 0.5s;
+            transform: translateY(100%);
+            border-radius: 25px;
+        }
+        .tab {
+            position: absolute;
+            background: #222222;
+            height: 17%;
+            /* width: 25%; */
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25%;
+            border-radius: 10px;
+        }
+
+        .cardImg {
+            height: 100px;
+        }
+        
+        .battLevel {
+            background-color: #65fe08;
+            width: 27%;
+            height: 20px;
+            padding:1px;
+            margin-top: 10px;
+            margin-left: 10px;
+            /* position: absolute; */
+            /* top: 20%;
+            left: 10%; */
+        }
+        .badge {
+            width: 100px;
+            height: 30px;
+            border-radius: 15px;
+            border: 2px solid black;
+            background-color: rgb(255, 255, 255);
+            position: absolute;
+            top: -75px;
+            left: 0px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: url(https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png);
+            background-size: contain;
+        }
+
+        .circle-div {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgb(255, 255, 255);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            transition: all 1s;
+        }
+
+        .circle-div > * {
+            pointer-events: none;
+        }
+
+        .circle-div img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .tail-div {
+            width: 0px;
+            height: 0px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 5px solid white;
+            position: absolute;
+            left: 50%;
+            top: -1px;
+            transform: translateX(-50%);
+        }
+
+        .info-box {
+            position: absolute;
+            background-color: rgb(65, 65, 65);
+            padding: 20px;
+            z-index: 100;
+            width: 100%;
+            height: 55%;
+            top: 12%;
+        }
+
+        .marker > * {
+            /* pointer-events: none; */
+        }
+
+        .marker.active-marker .circle-div {
+            background-color: blue;
+            transform:translate(-50%, -100%) scale(1.1);
+        }
+
+        .marker.active-marker .tail-div {
+            border-top-color:blue;
+            transform: translateX(-50%) scale(1.1);
+            top:2px;
+        }
+
+        .mapboxgl-popup {
+            
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div id="map" style="position: absolute; top: 0px; left: 0px; bottom: 0px; width: 100%;"></div>
+        <div id="trayContainer" class="traycontainer">
+          <div id="trayTab" class="tab" onclick="infoboxClick()"> </div>
+          <div id="bottomTray" class="tray" onclick="infoboxClick()">
+          <!-- <a href="#">About</a><a href="#">Services</a><a href="#">Clients</a><a href="#">Contact</a>-->
+          </div>
+        </div>  
+
+        <!-- <span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="closeNav()"><img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;"></span> -->
+        <span style="position: absolute; top: -25px; left: -20px; width: 40px; height: 40px;" onclick="infoboxClick()">
+          <img src="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/icons8-menu-64.png" width="40px" style="padding-top: 40px; padding-left: 40px;">
+        </span>
+
+    </div>
+
+    <script>
+        const stioSettings = {
+          "schema": "0.1.0",
+          "settings": [
+            {"name": "mToken", "label": "Mapbox Access Token", "type": "STRING"},
+            {"name": "mLat", "label": "Map Zone Latitude ", "type": "NUMBER"},
+            {"name": "mLon", "label": "Map Zone Longitude ", "type": "NUMBER"},
+            {
+              "name": "mZoom",
+              "label": "Map Zone Zoom Level (0-22) 0 = Zoomed Out, 22 = Zoomed In",
+              "type": "NUMBER"
+            },
+            {"name": "mapToken", "label": "MapBox Access Token", "type": "STRING"}
+          ],
+          "name": "Mapviewer v1.1",
+          "dimensions": {"height": 3, "width": 3}
+        };
+
+        var mLat = 35.18969231143789;
+        var mLon = -82.04842360357094;
+        var mZoom = 8;
+        var maptoken = '';
+        var mapSettings = {
+          mLat: 35.18969231143789,
+          mLon: -82.04842360357094,
+          mZoom: 8,
+          mapToken: ''
+        };
+        var tray_oc = false;
+
+        stio.ready(function(data) {
+            console.log('The user specified token is', data.settings.token)
+        });
+
+        stio.ready((data) => {
+          if (data.settings.mapToken == null) {
+            console.log("Please configure the authorization token and at least 1 device");
+            //return;
+          } else {
+            mapSettings.mapToken = data.settings.mapToken;
+            mapSettings.mLat = data.settings.mLat;
+            mapSettings.mLon = data.settings.mLon;
+            mapSettings.mZoom = data.settings.mZoom;
+          }
+        });
+
+        mapboxgl.accessToken = "pk.eyJ1IjoidGhleWNhbGxtZWUiLCJhIjoiY2xhZXF6anQxMHgzazNxczNzd2I5em10dyJ9.fa-pBQ_2cMg9H2fD-FBCDg";
+        //mapboxgl.accessToken = mapSettings.mapToken;
+        const map = new mapboxgl.Map({
+          container: "map",
+          style: "mapbox://styles/mapbox/dark-v10",
+          zoom: mZoom,
+          center: [mLon, mLat],
+          showLogo: false
+        });
+
+        const navigationControl = new mapboxgl.NavigationControl({
+          showCompass: false
+        });
+
+        map.addControl(navigationControl, 'top-right');
+
+        // data
+        // Define the badge URL as a constant
+        const badgeImageUrl = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png';
+        var geodataArray = [{
+          center: [-81.960750, 35.070420],
+          radiusInFeet: 230,
+          geofenceId: 'geofence1',
+          pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
+        }, {
+          center: [-81.950000, 35.080000],
+          radiusInFeet: 150,
+          geofenceId: 'geofence2',
+          pinImageUrl: ''
+        }];
+
+        var geofenceData = {
+          center: [-81.960750, 35.070420],
+          radiusInFeet: 100,
+          geofenceId: 'geofence1',
+          pinImageUrl: 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/geo-pin.png'
+        };   
+        
+        var membersData = [
+            {
+                id: "thx1138",
+                name: "Jake Mohl",
+                location: {
+                  latitude: 35.070420,
+                  longitude: -81.96076,
+                  address: "123 made you look",
+                  timestamp : "timestamp here"
+                },
+                status: {
+                  screen: "off",
+                  location_sharing: "on",
+                  isMoving: true,
+                  speed: 110,
+                  wifi: 'on',
+                  device: {
+                    screen: "off",
+                    wifi: "on",
+                    battery_level: 100,
+                    charging: true
+                  }
+                },
+                avatar: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+                badgeImageUrl: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/driving.png"
+            },
+            // Add more members here...
+            {
+                id: "abc123",
+                name: "Jane Doe",
+                location: {
+                  latitude: 34.0522,
+                  longitude: -118.2437,
+                  address: "123 made you look",
+                  timestamp : "timestamp here"
+                },
+                status: {
+                  screen: "on",
+                  location_sharing: "off",
+                  isMoving: false,
+                  speed: 0,
+                  wifi: 'off',
+                  device: {
+                    screen: "on",
+                    wifi: "off",
+                    battery_level: 62,
+                    charging: true
+                  }
+                },
+                avatar: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+                badgeImageUrl: "https://example.com/badge2.png"
+            }, 
+            {
+                id: "def456",
+                name: "John Smith",
+                location: {
+                  latitude: 40.7128,
+                  longitude: -74.0060,
+                  address: "123 made you look",
+                  timestamp : "timestamp here"
+                },
+                status: {
+                  screen: "on",
+                  location_sharing: "on",
+                  isMoving: true,
+                  speed: 70,
+                  wifi: 'on',
+                  device: {
+                    screen: "on",
+                    wifi: "on",
+                    battery_level: 78,
+                    charging: false
+                  }
+                },
+                avatar: "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/pngimg.com%20-%20deadpool_PNG15.png",
+                badgeImageUrl: "https://example.com/badge3.png"
+            }
+        ];
+
+        let activeMarker;
+
+        map.on("load", () => {
+            addMultipleGeofences(geodataArray);
+
+            membersData.forEach(function(member) {
+              addMember(member);
+            });
+
+            // Sample parameters
+            const lat = 35.070420;
+            const lon = -81.960750; 
+            const sizeInMeters = 260;
+            const hexagonId = 'myHexagon';
+            const fillColor = 'orange';
+            const fillOpacity = 0.75;
+            const borderColor = 'black';
+            const borderWidth = 1;
+            
+            // Call the function
+            addHexagon(lat, lon, sizeInMeters, hexagonId, fillColor, fillOpacity, borderColor, borderWidth);
+        
+            //drawHex(lat,lon);
+            console.log('hex function complete.');
+        });
+
+        function infoboxClick() {
+            var sidebar = document.getElementById("bottomTray");
+            var tray = document.getElementById("trayContainer");
+
+            if (tray_oc == false) {
+              //sidebar.style.top = "35%";
+              tray.style.top = "23%";
+              tray_oc = true;
+            } else {
+              //sidebar.style.top = "60%";
+              tray.style.top = "57%";
+              tray_oc = false;
+            }
+        }
+
+        function addGeofence(geodata) {
+            var center = geodata.center;
+            var radiusInMeters = 200; // Set the radius of the circle in meters
+            var options = { steps: 64, units: 'meters' };
+            var circle = turf.circle(center, radiusInMeters, options);
+        
+            // Add the circle to the map as a GeoJSON feature
+            map.addLayer({
+                id: geodata.geofenceId,
+                type: 'fill',
+                source: {
+                    type: 'geojson',
+                    data: circle
+                },
+                paint: {
+                    'fill-color': '#007cbf', // Green with 75% transparency
+                    'fill-opacity': 0.25
+                }
+            });
+
+            const defaultMarker = new mapboxgl.Marker({
+                anchor: 'bottom', // Anchor the marker to the bottom
+                offset: [0,24] // Offset the marker to align with the circle
+            });
+
+            defaultMarker.setLngLat(geodata.center).addTo(map);
+
+           // Add a white circle around the marker
+            map.addLayer({
+                id: geodata.geofenceId + '-circle',
+                type: 'circle',
+                source: {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: geodata.center
+                        }
+                    }
+                },
+                paint: {
+                    'circle-radius': 22,
+                    'circle-color': '#FFFFFF', // White color
+                    'circle-opacity': 1
+                }
+            });
+        }
+
+        // add member
+        function addMember(membersData) {
+            var el = document.createElement('div');
+            el.className = 'marker ' + membersData.id; // Assigning the member's ID as a class name
+            // Create the circular part of the pin
+            var circle = document.createElement('div');
+            circle.classList.add("circle-div");
+
+            // Create an image element for the marker image
+            var img = document.createElement('img');
+            img.src = membersData.avatar;
+
+            // Apply grayscale filter if screen is 'off'
+            if (membersData.status.location_sharing === 'off') {
+              img.style.filter = 'grayscale(100%)';
+            }
+
+            // Add the image to the circle
+            circle.appendChild(img);
+
+            // Create the tail of the pin
+            var tail = document.createElement('div');
+            tail.classList.add("tail-div");
+
+            el.appendChild(tail);
+            el.appendChild(circle);
+
+            // Add a badge
+            var badge = document.createElement('div');
+            badge.className = 'badge';
+            badge.style.width = membersData.status.speed !== 0 ? '100px' : '30px';
+            badge.style.borderRadius = membersData.status.speed !== 0 ? '15px' : '50%'; // Adjust border radius based on speed presence
+            badge.style.backgroundImage = `url(${badgeImageUrl})`; // Set the background image URL
+
+            // Add speed text if present
+            if (membersData.status.speed !== 0) {
+              var speedText = document.createElement('span');
+              speedText.className = 'badge-text';
+              speedText.textContent = membersData.status.speed + ' mph'; 
+              badge.appendChild(speedText);
+            }
+
+            el.appendChild(badge);
+
+            // Change the background color of the marker
+            el.style.backgroundColor = 'blue';
+            let { latitude, longitude } = membersData.location;
+            var marker = new mapboxgl.Marker(el);
+
+            let popup = new mapboxgl.Popup({ focusAfterOpen: false, offset:[0, -70]});
+            let popupContent = getPopupContent(membersData);
+            popup.setHTML(popupContent);
+
+            marker
+                .setPopup(popup)
+                .setLngLat([longitude, latitude])
+                .addTo(map);
+            
+            popup.on("close", (e) => {
+                console.log("Close Event");
+                if(activeMarker == marker) {
+                    activeMarker.getElement().classList.remove("active-marker");
+                    activeMarker = null;
+                }
+            });
+
+            marker.getElement().addEventListener('click', function(e) {
+                marker.getElement().classList.add("active-marker");
+
+                if(activeMarker) {
+                    activeMarker.getElement().classList.remove("active-marker");
+                }
+
+                activeMarker = marker;
+                // createMemberInfoBox(membersData);
+                flytoMemberLocation(membersData);
+            });
+
+            return marker; // Return the marker instance
+        }
+
+        function flytoMemberLocation(membersData) {
+            let { latitude, longitude } = membersData.location;
+            map.flyTo({
+                center: [longitude, latitude],
+                zoom: 12,
+                essential: true
+            })
+        }
+
+        function getPopupContent(member) {
+            let batteryIcon;
+            if (member.status.device.charging === true) {
+              batteryIcon = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png';
+            } else {
+              batteryIcon = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery.png';
+            }
+            
+            let popupContent = `<div class="popup-content">
+                <div class="header-content">
+                    <div style="background-color: white; height: 20%; border-radius: 14px; outline: 2px solid black; ">
+                        <div class="battLevel"></div>
+                        <img src=${batteryIcon} class="battInfo" alt="Marker Image" style="max-width: 100%; height: 39px;">
+                        <p style="font-family: Helvetica; font-weight: 900; font-size: 10px;">${member.status.device.battery_level}%</p>
+                    </div>
+                </div>
+
+                <div class="infobox_content">
+                    <img src="${member.avatar}" class="cardImg" alt="Marker Image" style="max-width: 100%;">
+                    
+                    <div class="">
+                        <h2 style="">${member.name}</h2>
+                        <div style="">Location: ${member.location.latitude}, ${member.location.longitude}</div>
+                        <!-- <p>Screen: ${member.status.screen}</p> -->
+                        <!-- <p>Speed: ${member.status.speed} mph</p> -->
+                    <div>
+                </div>
+            </div>`;
+
+            return popupContent;
+        }
+
+        function createMemberInfoBox(member) {
+            
+            // Create a box element
+            let batteryIcon;
+            if (member.status.device.charging === true) {
+              batteryIcon = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery_charging.png';
+            } else {
+              batteryIcon = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/Mapviewer/battery.png';
+            }
+           
+            var infoBox = document.createElement('div');
+            infoBox.className = 'info-box';
+
+            infoBox.onclick = function() {
+              infoBox.style.display = 'none';
+            };
+            
+            var closeButton = document.createElement('span');
+            closeButton.className = 'close-button';
+            closeButton.textContent = 'x';
+            closeButton.onclick = function() {
+              infoBox.style.display = 'none';
+            };
+
+            // Create content for the box
+            var content = document.createElement('div');
+            content.className = 'infobox_content';
+            content.innerHTML = `
+                <img src="${member.avatar}" class="cardImg" alt="Marker Image" style="max-width: 100%;">
+                <h2 style="position: absolute; top: 2%; left: 20%;">${member.name}</h2>
+                <div style="position: absolute; top: 24%; left: 20%;">Location: ${member.location.latitude}, ${member.location.longitude}</div>
+                <!-- <p>Screen: ${member.status.screen}</p> -->
+                <!-- <p>Speed: ${member.status.speed} mph</p> -->
+                <div style="background-color: white; position: absolute; width: 14%; height: 20%;left: 2.8%; border-radius: 14px; outline: 2px solid black; top: 68%;">
+                    <div class="battLevel"></div>
+                    <img src=${batteryIcon} class="battInfo" alt="Marker Image" style="max-width: 100%;position: absolute; top: -8px; left: 2px; height: 39px;">
+                    <p style="position: absolute; left: 54%; top: -2%; font-family: Helvetica; font-weight: 900; font-size: 10px;">${member.status.device.battery_level}%</p>
+                </div>
+            `; 
+
+            // Append close button and content to the box
+            infoBox.appendChild(closeButton);
+            infoBox.appendChild(content);
+
+            // Append the box to the bottomTray
+            var bottomTray = document.getElementById('bottomTray');
+            bottomTray.appendChild(infoBox);
+            if (tray_oc == false) {
+              infoboxClick();
+            }
+        }
+
+        function addMultipleGeofences(geodataArray) {
+            geodataArray.forEach(function(geodata) {
+              addGeofence(geodata);
+            });
+        }
+        
+        function metersToLongitudeDegrees(meters, atLatitude) {
+          return meters / (111.32 * Math.cos(atLatitude * Math.PI / 180));
+        }
+
+        function addHexagon(lat, lon, sizeInMeters, hexagonId, borderColor, borderWidth) {
+            var coordinates = [];
+            var angleDeg, angleRad, x, y;
+            // Convert size in meters to degrees latitude
+            var latDelta = sizeInMeters / 111320; // Approximate conversion: 1 degree = 111320 meters
+
+            for (var i = 0; i < 6; i++) {
+              angleDeg = 60 * i+90;
+              angleRad = (angleDeg * Math.PI) / 180;
+              x = lon + latDelta * Math.cos(angleRad);
+              y = lat + latDelta * Math.sin(angleRad);
+              coordinates.push([x, y]);
+            }
+
+            coordinates.push(coordinates[0]); // Close the polygon
+            map.addLayer({
+              id: hexagonId + '-fill',
+              type: 'fill',
+              source: {
+                type: 'geojson',
+                data: {
+                  type: 'Feature',
+                  geometry: {
+                    type: 'Polygon',
+                    coordinates: [coordinates]
+                  }
+                }
+              },
+              layout: {},
+              paint: {
+                'fill-color': '#007cbf',
+                'fill-opacity': 0.5
+              }
+            });
+
+            map.addLayer({
+              id: hexagonId + '-line',
+              type: 'line',
+              source: {
+                type: 'geojson',
+                data: {
+                  type: 'Feature',
+                  geometry: {
+                    type: 'Polygon',
+                    coordinates: [coordinates]
+                  }
+                }
+              },
+              layout: {},
+              paint: {
+                'line-color': borderColor,
+                'line-width': borderWidth
+              }
+            });
+        }
+    </script>
+</body>
+</html>
