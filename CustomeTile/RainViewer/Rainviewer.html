@@ -19,6 +19,16 @@
 }
 </script>
 <!-- Do not edit above -->
+<style>
+  /* Hide the compact attribution control */
+  .mapboxgl-ctrl-attrib.mapboxgl-compact {
+    display: none !important;
+  }
+  /* Hide all Mapbox controls */
+  .mapboxgl-ctrl {
+    display: none !important;
+  }
+</style>
 
 <meta charset="utf-8">
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
@@ -26,7 +36,7 @@
 <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.js"></script>
 <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
 
-<div id="map" style="position: absolute; top: 0px; bottom: 0px; width: 100%;"></div>
+<div id="map" style="position: absolute; top: 0; bottom: 0; width: 100%;"></div>
 <script>
   var mLat = 35;
   var mLon = -83;
@@ -37,12 +47,15 @@
   var wStyle = 1;
   var mStyle = "mapbox://styles/mapbox/dark-v11";
 
+  var totalLayers = 3;
+  var activeLayerIndex = 0;
+  var layersSetup = false;
+
   stio.ready((data) => {
     console.log("Starting Ecobee Init [shortyyy]");
     if (data.settings.mToken) {
       mToken = data.settings.mToken;
 
-      // Convert lat/lon from strings
       if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
       if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
       if (isNaN(mLat) || isNaN(mLon)) {
@@ -50,15 +63,13 @@
         return;
       }
 
-      // Zoom, style, etc.
       mZoom = data.settings.mZoom || mZoom;
       wStyle = data.settings.wStyle || wStyle;
 
-      // Map style
-      if (data.settings.mStyle == 1) { mStyle = "mapbox://styles/mapbox/streets-v12"; }
-      if (data.settings.mStyle == 2) { mStyle = "mapbox://styles/mapbox/light-v11"; }
-      if (data.settings.mStyle == 3) { mStyle = "mapbox://styles/mapbox/dark-v11"; }
-      if (data.settings.mStyle == 4) { mStyle = "mapbox://styles/mapbox/satellite-v9"; }
+      if (data.settings.mStyle == 1) mStyle = "mapbox://styles/mapbox/streets-v12";
+      if (data.settings.mStyle == 2) mStyle = "mapbox://styles/mapbox/light-v11";
+      if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
+      if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
 
       console.log('Token Loaded:', mToken);
       console.log('Latitude:', mLat, 'Longitude:', mLon);
@@ -72,7 +83,7 @@
 
   function initializeMap() {
     const map = new mapboxgl.Map({
-      container: 'map',
+      container: "map",
       style: mStyle,
       center: [mLon, mLat],
       zoom: mZoom
@@ -81,50 +92,47 @@
     new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
     window.map = map;
 
-    map.on('load', async () => {
-      await fetchRadarData();
-      animateRadar();
+    map.on("load", async () => {
+      await fetchRadarData(); // get frames with up to 2 hours
+      animateRadar();         // start animation
       setInterval(fetchRadarData, 300000);
     });
   }
 
+  // CHANGED: appended ?past_hours=2 so we can get up to 2 hours (if available)
   async function fetchRadarData() {
     try {
-      const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      const response = await fetch(
+        "https://api.rainviewer.com/public/weather-maps.json?past_hours=2"
+      );
       const apiData = await response.json();
-      // fill radarFrames from .past array
-      radarFrames = apiData.radar.past.map(frame => (
+      radarFrames = apiData.radar.past.map((frame) =>
         `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
-      ));
-      console.log('Radar Frames Loaded:', radarFrames);
+      );
+      console.log("Radar Frames Loaded:", radarFrames, "Count:", radarFrames.length);
     } catch (error) {
-      console.error('Error fetching radar data:', error);
+      console.error("Error fetching radar data:", error);
     }
   }
 
-  // We'll create 3 layers in a round-robin, updating the tile each time so all frames are used.
-
-  var totalLayers = 3;
-  var activeLayerIndex = 0; // which layer is visible now
-  var layersSetup = false;  // track if we've created the 3 layers
-
   function setupThreeLayers() {
-    // If no frames, skip
     if (radarFrames.length === 0) return;
 
-    for (let i=0; i<totalLayers; i++) {
-      // Start each layer with a valid frame or frame[0]
-      const initFrame = radarFrames[Math.min(i, radarFrames.length -1)] || radarFrames[0];
+    for (let i = 0; i < totalLayers; i++) {
+      const initFrame = radarFrames[Math.min(i, radarFrames.length - 1)] || radarFrames[0];
       map.addSource(`radarSource${i}`, {
         type: 'raster',
         tiles: [initFrame],
-        tileSize: 256
+        tileSize: 256,
+        // Limit zoom to avoid geometry warnings
+        minzoom: 0,
+        maxzoom: 12
       });
       map.addLayer({
         id: `radarLayer${i}`,
         type: 'raster',
         source: `radarSource${i}`,
-        paint: { 'raster-opacity': (i===0 ? 1 : 0) }
+        paint: { 'raster-opacity': (i === 0 ? 1 : 0) }
       });
     }
     activeLayerIndex = 0;
@@ -134,13 +142,10 @@
   function animateRadar() {
     if (radarFrames.length < 2) return;
 
-    // If we haven't set up 3 layers yet, do so
     if (!layersSetup) {
       setupThreeLayers();
-      // Wait a moment for user to see the first frame
       setTimeout(cycleFrame, 1000);
     } else {
-      // we've already set them up, continue cycle
       cycleFrame();
     }
   }
@@ -149,46 +154,49 @@
     if (radarFrames.length < 2) return;
 
     const nextFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-
-    // The next layer index in [0,1,2]
     const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;
 
-    // Identify layer IDs
     const activeLayerId = `radarLayer${activeLayerIndex}`;
     const newLayerId    = `radarLayer${nextLayerIndex}`;
     const newSourceId   = `radarSource${nextLayerIndex}`;
 
-    // Update the next layer's tile to the upcoming frame
     map.getSource(newSourceId).tiles = [ radarFrames[nextFrameIndex] ];
-    map.getSource(newSourceId)._tiles = {}; // force reload
-    // Make sure it's at 0 opacity
+    map.getSource(newSourceId)._tiles = {};
     map.setPaintProperty(newLayerId, 'raster-opacity', 0);
 
-    // We'll fade out old (1->0), fade in new(0->1)
-    let step = 0;
-    const steps = 20; // 0.5s fade
-    const stepMS = 40;
+    const startFade = () => {
+      let step = 0;
+      const steps = 20; // => 0.5s fade
+      const stepMS = 25;
 
-    const fadeInterval = setInterval(()=> {
-      step++;
-      const fraction = step / steps; // 0..1
+      const fadeInterval = setInterval(() => {
+        step++;
+        const fraction = step / steps;
 
-      map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
-      map.setPaintProperty(newLayerId,   'raster-opacity', fraction);
+        map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
+        map.setPaintProperty(newLayerId,    'raster-opacity', fraction);
 
-      if (step>=steps) {
-        clearInterval(fadeInterval);
-        currentFrameIndex = nextFrameIndex;
-        // new layer becomes active
-        activeLayerIndex = nextLayerIndex;
-        // hide old layer
-        map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
+        if (step >= steps) {
+          clearInterval(fadeInterval);
+          currentFrameIndex = nextFrameIndex;
+          activeLayerIndex  = nextLayerIndex;
+          map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
 
-        console.log(`Now showing frame index ${currentFrameIndex}:`, radarFrames[currentFrameIndex]);
+          console.log(`Now showing frame index ${currentFrameIndex}:`, radarFrames[currentFrameIndex]);
+          setTimeout(cycleFrame, 500);
+        }
+      }, stepMS);
+    };
 
-        // after 0.5s, show next
-        setTimeout(cycleFrame, 500);
-      }
-    }, stepMS);
+    const onIdle = () => {
+      map.off('idle', onIdle);
+      startFade();
+    };
+
+    map.once('idle', onIdle);
+    setTimeout(() => {
+      map.off('idle', onIdle);
+      startFade();
+    }, 300);
   }
 </script>
