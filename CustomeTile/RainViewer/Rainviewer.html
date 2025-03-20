@@ -12,11 +12,7 @@
       "type": "NUMBER"
     },
     {"type": "NUMBER", "name": "wStyle", "label": "Weather Style (0-11)"},
-    {
-      "type": "NUMBER",
-      "name": "mStyle",
-      "label": "Map Style (1: Streets, 2: Light, 3: Dark, 4: Satellite)"
-    }
+    {"type": "NUMBER", "name": "mStyle", "label": "Map Style (1: Streets, 2: Light, 3: Dark, 4: Satellite)"}
   ],
   "name": "Rain Viewer",
   "dimensions": {"height": 3, "width": 3}
@@ -46,19 +42,19 @@
     if (data.settings.mToken) {
       mToken = data.settings.mToken;
 
-      // Convert mLat and mLon from strings to numbers if provided as strings
+      // Convert lat/lon from strings
       if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
       if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
-
-      // Check if mLat and mLon are valid numbers
       if (isNaN(mLat) || isNaN(mLon)) {
         console.error('Error: Invalid mLat or mLon. Ensure they are valid numbers.');
-        return; // Stop execution if invalid numbers
+        return;
       }
 
+      // Zoom, style, etc.
       mZoom = data.settings.mZoom || mZoom;
       wStyle = data.settings.wStyle || wStyle;
 
+      // Map style
       if (data.settings.mStyle == 1) { mStyle = "mapbox://styles/mapbox/streets-v12"; }
       if (data.settings.mStyle == 2) { mStyle = "mapbox://styles/mapbox/light-v11"; }
       if (data.settings.mStyle == 3) { mStyle = "mapbox://styles/mapbox/dark-v11"; }
@@ -69,26 +65,24 @@
       console.log('Weather Style:', wStyle);
       console.log('Map Style URL:', mStyle);
 
-      mapboxgl.accessToken = mToken; 
+      mapboxgl.accessToken = mToken;
       initializeMap();
     }
   });
 
   function initializeMap() {
     const map = new mapboxgl.Map({
-      container: "map",
+      container: 'map',
       style: mStyle,
       center: [mLon, mLat],
       zoom: mZoom
     });
 
-    const marker1 = new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
-
+    new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
     window.map = map;
 
-    map.on("load", async () => {
+    map.on('load', async () => {
       await fetchRadarData();
-      updateRadarLayers();
       animateRadar();
       setInterval(fetchRadarData, 300000);
     });
@@ -96,67 +90,105 @@
 
   async function fetchRadarData() {
     try {
-      const response = await fetch(`https://api.rainviewer.com/public/weather-maps.json`);
+      const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
       const apiData = await response.json();
-      radarFrames = apiData.radar.past.map(frame => `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`);
-
+      // fill radarFrames from .past array
+      radarFrames = apiData.radar.past.map(frame => (
+        `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
+      ));
       console.log('Radar Frames Loaded:', radarFrames);
     } catch (error) {
       console.error('Error fetching radar data:', error);
     }
   }
 
-  function updateRadarLayers() {
-    if (!map.getSource('radarSource1')) {
-      map.addSource('radarSource1', {
-        type: 'raster',
-        tiles: [radarFrames[0]],
-        tileSize: 256,
-        minzoom: 0,
-        maxzoom: 12
-      });
-      map.addLayer({ id: 'radarLayer1', type: 'raster', source: 'radarSource1', paint: { 'raster-opacity': 1 } });
+  // We'll create 3 layers in a round-robin, updating the tile each time so all frames are used.
 
-      map.addSource('radarSource2', {
+  var totalLayers = 3;
+  var activeLayerIndex = 0; // which layer is visible now
+  var layersSetup = false;  // track if we've created the 3 layers
+
+  function setupThreeLayers() {
+    // If no frames, skip
+    if (radarFrames.length === 0) return;
+
+    for (let i=0; i<totalLayers; i++) {
+      // Start each layer with a valid frame or frame[0]
+      const initFrame = radarFrames[Math.min(i, radarFrames.length -1)] || radarFrames[0];
+      map.addSource(`radarSource${i}`, {
         type: 'raster',
-        tiles: [radarFrames[1]],
-        tileSize: 256,
-        minzoom: 0,
-        maxzoom: 12
+        tiles: [initFrame],
+        tileSize: 256
       });
-      map.addLayer({ id: 'radarLayer2', type: 'raster', source: 'radarSource2', paint: { 'raster-opacity': 0 } });
+      map.addLayer({
+        id: `radarLayer${i}`,
+        type: 'raster',
+        source: `radarSource${i}`,
+        paint: { 'raster-opacity': (i===0 ? 1 : 0) }
+      });
     }
+    activeLayerIndex = 0;
+    layersSetup = true;
   }
 
   function animateRadar() {
-    if (radarFrames.length === 0) return;
+    if (radarFrames.length < 2) return;
+
+    // If we haven't set up 3 layers yet, do so
+    if (!layersSetup) {
+      setupThreeLayers();
+      // Wait a moment for user to see the first frame
+      setTimeout(cycleFrame, 1000);
+    } else {
+      // we've already set them up, continue cycle
+      cycleFrame();
+    }
+  }
+
+  function cycleFrame() {
+    if (radarFrames.length < 2) return;
 
     const nextFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-    const transitionDuration = 1000;
-    const steps = 20;
-    const stepDuration = transitionDuration / steps;
 
-    let currentStep = 0;
+    // The next layer index in [0,1,2]
+    const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;
 
-    const fadeInterval = setInterval(() => {
-      currentStep++;
-      const opacity = currentStep / steps;
+    // Identify layer IDs
+    const activeLayerId = `radarLayer${activeLayerIndex}`;
+    const newLayerId    = `radarLayer${nextLayerIndex}`;
+    const newSourceId   = `radarSource${nextLayerIndex}`;
 
-      map.setPaintProperty('radarLayer1', 'raster-opacity', 1 - opacity);
-      map.setPaintProperty('radarLayer2', 'raster-opacity', opacity);
+    // Update the next layer's tile to the upcoming frame
+    map.getSource(newSourceId).tiles = [ radarFrames[nextFrameIndex] ];
+    map.getSource(newSourceId)._tiles = {}; // force reload
+    // Make sure it's at 0 opacity
+    map.setPaintProperty(newLayerId, 'raster-opacity', 0);
 
-      if (currentStep >= steps) {
+    // We'll fade out old (1->0), fade in new(0->1)
+    let step = 0;
+    const steps = 20; // 0.5s fade
+    const stepMS = 40;
+
+    const fadeInterval = setInterval(()=> {
+      step++;
+      const fraction = step / steps; // 0..1
+
+      map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
+      map.setPaintProperty(newLayerId,   'raster-opacity', fraction);
+
+      if (step>=steps) {
         clearInterval(fadeInterval);
         currentFrameIndex = nextFrameIndex;
+        // new layer becomes active
+        activeLayerIndex = nextLayerIndex;
+        // hide old layer
+        map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
 
-        map.getSource('radarSource1').tiles = [radarFrames[currentFrameIndex]];
-        map.getSource('radarSource1')._tiles = {};
+        console.log(`Now showing frame index ${currentFrameIndex}:`, radarFrames[currentFrameIndex]);
 
-        map.getSource('radarSource2').tiles = [radarFrames[(currentFrameIndex + 1) % radarFrames.length]];
-        map.getSource('radarSource2')._tiles = {};
-
-        setTimeout(animateRadar, 1000);
+        // after 0.5s, show next
+        setTimeout(cycleFrame, 500);
       }
-    }, stepDuration);
+    }, stepMS);
   }
 </script>
