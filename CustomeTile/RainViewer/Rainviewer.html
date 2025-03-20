@@ -1,0 +1,132 @@
+<!-- Do not edit below -->
+<script type="application/json" id="tile-settings">
+{
+  "schema": "0.2.0",
+  "settings": [
+    {"name": "mToken", "label": "Mapbox Access Token", "type": "STRING"},
+    {"type": "STRING", "name": "mLat", "label": "Map Zone Latitude "},
+    {"type": "STRING", "name": "mLon", "label": "Map Zone Longitude "},
+    {
+      "name": "mZoom",
+      "label": "Map Zone Zoom Level (0-22) 0 = Zoomed Out, 22 = Zoomed In",
+      "type": "NUMBER"
+    },
+    {"type": "NUMBER", "name": "wStyle", "label": "Weather Style (0-8)"},
+    {
+      "type": "NUMBER",
+      "name": "mStyle",
+      "label": "Map Style (1: Streets, 2: Light, 3: Dark, 4: Satellite)"
+    }
+  ],
+  "name": "Rain Viewer",
+  "dimensions": {"height": 3, "width": 3}
+}
+</script>
+<!-- Do not edit above -->
+
+<meta charset="utf-8">
+<meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<script src="//cdn.sharptools.io/js/custom-tiles.js"></script>
+<script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.js"></script>
+<link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
+
+<div id="map" style="position: absolute; top: 0px; bottom: 0px; width: 100%;"></div>
+<script>
+  var mLat = 35;
+  var mLon = -83;
+  var mZoom = 5;
+  var radarFrames = [];
+  var currentFrameIndex = 0;
+  var mToken;
+  var wStyle = 1;
+  var mStyle = "mapbox://styles/mapbox/dark-v11";
+
+  stio.ready((data) => {
+    console.log("Starting Ecobee Init [shortyyy]");
+    if (data.settings.mToken) {
+      mToken = data.settings.mToken;
+
+      // Convert mLat and mLon from strings to numbers if provided as strings
+      if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
+      if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
+
+      // Check if mLat and mLon are valid numbers
+      if (isNaN(mLat) || isNaN(mLon)) {
+        console.error('Error: Invalid mLat or mLon. Ensure they are valid numbers.');
+        return; // Stop execution if invalid numbers
+      }
+
+      mZoom = data.settings.mZoom || mZoom;
+      wStyle = data.settings.wStyle || wStyle;
+
+      // Correct if conditions with parentheses
+      if (data.settings.mStyle == 1) { mStyle = "mapbox://styles/mapbox/streets-v11"; }
+      if (data.settings.mStyle == 2) { mStyle = "mapbox://styles/mapbox/light-v11"; }
+      if (data.settings.mStyle == 3) { mStyle = "mapbox://styles/mapbox/dark-v11"; }
+      if (data.settings.mStyle == 4) { mStyle = "mapbox://styles/mapbox/satellite-v9"; }
+
+      console.log('Token Loaded:', mToken);
+      console.log('Latitude:', mLat, 'Longitude:', mLon);
+      console.log('Weather Style:', wStyle);
+      console.log('Map Style URL:', mStyle);
+
+      // Set the access token and then initialize the map
+      mapboxgl.accessToken = mToken; 
+      initializeMap();
+    }
+  });
+
+  function initializeMap() {
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: mStyle,  // Use the selected map style
+      center: [mLon, mLat],
+      zoom: mZoom
+    });
+
+    const marker1 = new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
+
+    window.map = map;
+
+    map.on("load", async () => {
+      await fetchRadarData();
+      updateRadarLayers();
+      animateRadar();
+      setInterval(fetchRadarData, 300000); // Refresh data every 5 minutes
+    });
+  }
+
+  async function fetchRadarData() {
+    try {
+      const response = await fetch(`https://api.rainviewer.com/public/weather-maps.json`);
+      const apiData = await response.json();
+      radarFrames = apiData.radar.past.map(frame => `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`); 
+
+      console.log('Radar Frames Loaded:', radarFrames);
+    } catch (error) {
+      console.error('Error fetching radar data:', error);
+    }
+  }
+
+  function updateRadarLayers() {
+    if (!map.getSource('radarSource1')) {
+      map.addSource('radarSource1', { 
+        type: 'raster', 
+        tiles: [radarFrames[0]], 
+        tileSize: 256, 
+        minzoom: 0, 
+        maxzoom: 12
+      });
+      map.addLayer({ id: 'radarLayer1', type: 'raster', source: 'radarSource1', paint: { 'raster-opacity': 1 } });
+
+      map.addSource('radarSource2', { 
+        type: 'raster', 
+        tiles: [radarFrames[1]], 
+        tileSize: 256, 
+        minzoom: 0, 
+        maxzoom: 12
+      });
+      map.addLayer({ id: 'radarLayer2', type: 'raster', source: 'radarSource2', paint: { 'raster-opacity': 0 } });
+    }
+  }
+</script>
