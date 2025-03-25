@@ -12,22 +12,26 @@
       "type": "NUMBER"
     },
     {"type": "NUMBER", "name": "wStyle", "label": "Weather Style (0-11)"},
-    {"type": "NUMBER", "name": "mStyle", "label": "Map Style (1: Streets, 2: Light, 3: Dark, 4: Satellite)"}
+    {
+      "type": "NUMBER",
+      "name": "mStyle",
+      "label": "Map Style (1: Streets, 2: Light, 3: Dark, 4: Satellite)"
+    }
   ],
-  "name": "Rain Viewer",
+  "name": "xWeather",
   "dimensions": {"height": 3, "width": 3}
 }
 </script>
 <!-- Do not edit above -->
+
 <style>
   /* Hide the compact attribution control */
-  .mapboxgl-ctrl-attrib.mapboxgl-compact {
-    display: none !important;
-  }
+  .mapboxgl-ctrl-attrib.mapboxgl-compact { display: none !important; }
   /* Hide all Mapbox controls */
-  .mapboxgl-ctrl {
-    display: none !important;
-  }
+  .mapboxgl-ctrl { display: none !important; }
+  /* Play/Pause Button Styles */
+  #controls { position: absolute; top: 10px; right: 10px; z-index: 10; }
+  #playPauseBtn { padding: 5px 10px; font-size: 16px; }
 </style>
 
 <meta charset="utf-8">
@@ -37,6 +41,10 @@
 <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
 
 <div id="map" style="position: absolute; top: 0; bottom: 0; width: 100%;"></div>
+<div id="controls">
+  <button id="playPauseBtn">Pause</button>
+</div>
+
 <script>
   var mLat = 35;
   var mLon = -83;
@@ -46,13 +54,13 @@
   var mToken;
   var wStyle = 1;
   var mStyle = "mapbox://styles/mapbox/dark-v11";
-
   var totalLayers = 3;
   var activeLayerIndex = 0;
   var layersSetup = false;
+  var isPlaying = true;
+  var map;
 
   stio.ready((data) => {
-    console.log("Starting Ecobee Init [shortyyy]");
     if (data.settings.mToken) {
       mToken = data.settings.mToken;
 
@@ -71,18 +79,13 @@
       if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
       if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
 
-      console.log('Token Loaded:', mToken);
-      console.log('Latitude:', mLat, 'Longitude:', mLon);
-      console.log('Weather Style:', wStyle);
-      console.log('Map Style URL:', mStyle);
-
       mapboxgl.accessToken = mToken;
       initializeMap();
     }
   });
 
   function initializeMap() {
-    const map = new mapboxgl.Map({
+    map = new mapboxgl.Map({
       container: "map",
       style: mStyle,
       center: [mLon, mLat],
@@ -90,26 +93,20 @@
     });
 
     new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
-    window.map = map;
-
     map.on("load", async () => {
-      await fetchRadarData(); // get frames with up to 2 hours
-      animateRadar();         // start animation
-      setInterval(fetchRadarData, 300000);
+      await fetchRadarData();
+      animateRadar();
+      setInterval(fetchRadarData, 300000); // Refresh radar data every 5 minutes
     });
   }
 
-  // CHANGED: appended ?past_hours=2 so we can get up to 2 hours (if available)
   async function fetchRadarData() {
     try {
-      const response = await fetch(
-        "https://api.rainviewer.com/public/weather-maps.json?past_hours=2"
-      );
+      const response = await fetch("https://api.rainviewer.com/public/weather-maps.json?past_hours=6");
       const apiData = await response.json();
       radarFrames = apiData.radar.past.map((frame) =>
         `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
       );
-      console.log("Radar Frames Loaded:", radarFrames, "Count:", radarFrames.length);
     } catch (error) {
       console.error("Error fetching radar data:", error);
     }
@@ -120,20 +117,8 @@
 
     for (let i = 0; i < totalLayers; i++) {
       const initFrame = radarFrames[Math.min(i, radarFrames.length - 1)] || radarFrames[0];
-      map.addSource(`radarSource${i}`, {
-        type: 'raster',
-        tiles: [initFrame],
-        tileSize: 256,
-        // Limit zoom to avoid geometry warnings
-        minzoom: 0,
-        maxzoom: 12
-      });
-      map.addLayer({
-        id: `radarLayer${i}`,
-        type: 'raster',
-        source: `radarSource${i}`,
-        paint: { 'raster-opacity': (i === 0 ? 1 : 0) }
-      });
+      map.addSource(`radarSource${i}`, { type: 'raster', tiles: [initFrame], tileSize: 256, minzoom: 0, maxzoom: 12 });
+      map.addLayer({ id: `radarLayer${i}`, type: 'raster', source: `radarSource${i}`, paint: { 'raster-opacity': (i === 0 ? 1 : 0) } });
     }
     activeLayerIndex = 0;
     layersSetup = true;
@@ -144,59 +129,77 @@
 
     if (!layersSetup) {
       setupThreeLayers();
-      setTimeout(cycleFrame, 1000);
+      requestAnimationFrame(cycleFrame);
     } else {
-      cycleFrame();
+      requestAnimationFrame(cycleFrame);
     }
   }
 
-  function cycleFrame() {
-    if (radarFrames.length < 2) return;
+function cycleFrame() {
+    if (!isPlaying || radarFrames.length < 2) return;
 
     const nextFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-    const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;
+    const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;  // Total layers: 3
 
     const activeLayerId = `radarLayer${activeLayerIndex}`;
-    const newLayerId    = `radarLayer${nextLayerIndex}`;
-    const newSourceId   = `radarSource${nextLayerIndex}`;
+    const newLayerId = `radarLayer${nextLayerIndex}`;
+    const newSourceId = `radarSource${nextLayerIndex}`;
 
-    map.getSource(newSourceId).tiles = [ radarFrames[nextFrameIndex] ];
-    map.getSource(newSourceId)._tiles = {};
-    map.setPaintProperty(newLayerId, 'raster-opacity', 0);
+    // Pre-fetch the new frame before transition
+    loadFrame(newSourceId, radarFrames[nextFrameIndex]).then(() => {
+        const duration = 500; // 0.5 seconds for fade transition
+        const startTime = performance.now();
 
-    const startFade = () => {
-      let step = 0;
-      const steps = 20; // => 0.5s fade
-      const stepMS = 25;
+        function fadeInterval() {
+            if (!isPlaying) return;
 
-      const fadeInterval = setInterval(() => {
-        step++;
-        const fraction = step / steps;
+            const elapsed = performance.now() - startTime;
+            const fraction = Math.min(elapsed / duration, 1);
 
-        map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
-        map.setPaintProperty(newLayerId,    'raster-opacity', fraction);
+            // Apply smooth transition
+            map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
+            map.setPaintProperty(newLayerId, 'raster-opacity', fraction);
 
-        if (step >= steps) {
-          clearInterval(fadeInterval);
-          currentFrameIndex = nextFrameIndex;
-          activeLayerIndex  = nextLayerIndex;
-          map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
+            if (fraction < 1) {
+                requestAnimationFrame(fadeInterval);
+            } else {
+                // Complete the transition
+                currentFrameIndex = nextFrameIndex;
+                activeLayerIndex = nextLayerIndex;
 
-          console.log(`Now showing frame index ${currentFrameIndex}:`, radarFrames[currentFrameIndex]);
-          setTimeout(cycleFrame, 500);
+                // Hide the previous layer entirely
+                map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
+
+                // Prepare the third layer for pre-loading the next frame
+                const preloadLayerIndex = (activeLayerIndex + 1) % totalLayers;
+                const preloadSourceId = `radarSource${preloadLayerIndex}`;
+
+                // Preload the upcoming frame (two ahead)
+                const preloadFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+                loadFrame(preloadSourceId, radarFrames[preloadFrameIndex]);
+
+                // Continue to the next frame after a small delay
+                setTimeout(() => requestAnimationFrame(cycleFrame), 100);
+            }
         }
-      }, stepMS);
-    };
 
-    const onIdle = () => {
-      map.off('idle', onIdle);
-      startFade();
-    };
+        fadeInterval();
+    });
+}
 
-    map.once('idle', onIdle);
-    setTimeout(() => {
-      map.off('idle', onIdle);
-      startFade();
-    }, 300);
-  }
+// Frame Loader Function
+function loadFrame(sourceId, tileUrl) {
+    return new Promise((resolve) => {
+        map.getSource(sourceId).tiles = [tileUrl];
+        map.once('idle', resolve); // Resolve when the frame is fully loaded
+    });
+}
+
+
+
+  document.getElementById('playPauseBtn').addEventListener('click', () => {
+    isPlaying = !isPlaying;
+    document.getElementById('playPauseBtn').textContent = isPlaying ? 'Pause' : 'Play';
+    if (isPlaying) requestAnimationFrame(cycleFrame);
+  });
 </script>
