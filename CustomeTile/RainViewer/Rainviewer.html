@@ -16,7 +16,8 @@
       "type": "NUMBER",
       "name": "mStyle",
       "label": "Map Style (1: Streets, 2: Light, 3: Dark, 4: Satellite)"
-    }
+    },
+    {"type": "STRING", "name": "statesAlerts", "label": "NC  or NC,SC,GA,TN"}
   ],
   "name": "xWeather",
   "dimensions": {"height": 3, "width": 3}
@@ -32,6 +33,14 @@
   /* Play/Pause Button Styles */
   #controls { position: absolute; top: 10px; right: 10px; z-index: 10; }
   #playPauseBtn { padding: 5px 10px; font-size: 16px; }
+
+  /* OPTIONAL: Customize the popup content style to have white text (and a custom background if you want) */
+  .mapboxgl-popup-content {
+    color: black; /* text color is white */
+    background-color: rgba(0,0,0,0.7); /* translucent black background if desired */
+    border-radius: 6px;
+    padding: 8px;
+  }
 </style>
 
 <meta charset="utf-8">
@@ -46,160 +55,340 @@
 </div>
 
 <script>
-  var mLat = 35;
-  var mLon = -83;
-  var mZoom = 5;
-  var radarFrames = [];
-  var currentFrameIndex = 0;
-  var mToken;
-  var wStyle = 1;
-  var mStyle = "mapbox://styles/mapbox/dark-v11";
-  var totalLayers = 3;
-  var activeLayerIndex = 0;
-  var layersSetup = false;
-  var isPlaying = true;
-  var map;
+// NOAA Alert -> Color dictionary
+const ALERT_COLORS = {
+  "Tornado Warning": "red",
+  "Severe Thunderstorm Warning": "orange",
+  "Flash Flood Warning": "darkgreen",
+  "Hurricane Warning": "purple",
+  "Tropical Storm Warning": "blue",
+  "Tornado Watch": "yellow",
+  "Severe Thunderstorm Watch": "yellow",
+  "Hurricane Watch": "plum",
+  "Tropical Storm Watch": "lightblue",
+  "Flood Warning": "darkgreen",
+  "Flood Watch": "lightgreen",
+  "Coastal Flood Warning": "teal",
+  "Coastal Flood Watch": "lightseagreen",
+  "Winter Storm Warning": "pink",
+  "Winter Storm Watch": "lightpink",
+  "Blizzard Warning": "white",
+  "Wind Chill Warning": "lightblue",
+  "High Wind Warning": "brown",
+  "Wind Advisory": "tan",
+  "Heat Advisory": "orange",
+  "Excessive Heat Warning": "darkorange",
+  "Fire Weather Warning": "red",
+  "Special Marine Warning": "blue",
+  "Air Quality Alert": "gray",
+  // fallback color
+  "default": "gray"
+};
 
-  stio.ready((data) => {
-    if (data.settings.mToken) {
-      mToken = data.settings.mToken;
+var mLat = 35;
+var mLon = -83;
+var mZoom = 5;
+var radarFrames = [];
+var currentFrameIndex = 0;
+var mToken;
+var wStyle = 1;
+var mStyle = "mapbox://styles/mapbox/dark-v11";
+var stateAlerts = "NC,SC,GA,TN"
 
-      if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
-      if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
-      if (isNaN(mLat) || isNaN(mLon)) {
-        console.error('Error: Invalid mLat or mLon. Ensure they are valid numbers.');
-        return;
+var totalLayers = 3;
+var activeLayerIndex = 0;
+var layersSetup = false;
+var isPlaying = true;
+var map;
+
+/* stio.ready logic for Sharptools settings */
+stio.ready((data) => {
+  if (data.settings.mToken) {
+    mToken = data.settings.mToken;
+
+    if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
+    if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
+    if (isNaN(mLat) || isNaN(mLon)) {
+      console.error('Error: Invalid mLat or mLon. Ensure valid numbers.');
+      return;
+    }
+
+    mZoom = data.settings.mZoom || mZoom;
+    wStyle = data.settings.wStyle || wStyle;
+    stateAlerts = data.settings.statesAlerts || stateAlerts;
+    if (data.settings.mStyle == 1) mStyle = "mapbox://styles/mapbox/streets-v12";
+    if (data.settings.mStyle == 2) mStyle = "mapbox://styles/mapbox/light-v11";
+    if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
+    if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
+
+    mapboxgl.accessToken = mToken;
+    initializeMap();
+  }
+});
+
+function initializeMap() {
+  map = new mapboxgl.Map({
+    container: "map",
+    style: mStyle,
+    center: [mLon, mLat],
+    zoom: mZoom
+  });
+
+  // optional marker
+  new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
+
+  map.on("load", async () => {
+    await fetchRadarData();
+    await fetchNoaaAlerts();
+    animateRadar();
+    // refresh radar data every 5 minutes
+    setInterval(fetchRadarData, 300000);
+  });
+}
+
+/* RAINVIEWER Radar Data */
+async function fetchRadarData() {
+  try {
+    const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
+    const response = await fetch(url);
+    const apiData = await response.json();
+    radarFrames = apiData.radar.past.map(frame =>
+      `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
+    );
+    console.log("Radar frames loaded:", radarFrames.length);
+  } catch (error) {
+    console.error("Error fetching radar data:", error);
+  }
+}
+
+/* NOAA Alerts for TN, NC, SC, GA */
+async function fetchNoaaAlerts() {
+  const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
+
+  try {
+    const response = await fetch(alertUrl);
+    const data = await response.json();
+    if (!data.features) {
+      console.log("No NOAA alerts found for ${statesAlerts}");
+      return;
+    }
+    console.log("NOAA Alerts found:", data.features.length);
+
+    for (const feature of data.features) {
+      const eventType = feature.properties.event || "default";
+      const alertColor = ALERT_COLORS[eventType] || ALERT_COLORS["default"];
+      const headline = feature.properties.headline || "N/A";
+      // store 'headline' in properties for popup
+      const updatedProps = {
+        ...feature.properties,
+        fillColor: alertColor,
+        myHeadline: headline
+      };
+      // clone feature
+      const newFeature = {
+        ...feature,
+        properties: updatedProps
+      };
+
+      if (newFeature.geometry) {
+        addAlertPolygon(newFeature, alertColor);
+      } else {
+        const zones = newFeature.properties.affectedZones || [];
+        for (const zoneUrl of zones) {
+          await fetchZoneGeometry(zoneUrl, newFeature, alertColor);
+        }
       }
+    }
+  } catch (err) {
+    console.error("Error fetching NOAA alerts:", err);
+  }
+}
 
-      mZoom = data.settings.mZoom || mZoom;
-      wStyle = data.settings.wStyle || wStyle;
-
-      if (data.settings.mStyle == 1) mStyle = "mapbox://styles/mapbox/streets-v12";
-      if (data.settings.mStyle == 2) mStyle = "mapbox://styles/mapbox/light-v11";
-      if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
-      if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
-
-      mapboxgl.accessToken = mToken;
-      initializeMap();
+function addAlertPolygon(feature, color) {
+  const alertId = feature.id || ("alert-" + Math.random());
+  map.addSource(alertId, {
+    type: "geojson",
+    data: {
+      type: "FeatureCollection",
+      features: [feature]
+    }
+  });
+  // fill
+  map.addLayer({
+    id: alertId,
+    type: "fill",
+    source: alertId,
+    paint: {
+      "fill-color": color,
+      "fill-opacity": 0.3
+    }
+  });
+  // border
+  map.addLayer({
+    id: alertId + "-border",
+    type: "line",
+    source: alertId,
+    paint: {
+      "line-color": color,
+      "line-width": 2
     }
   });
 
-  function initializeMap() {
-    map = new mapboxgl.Map({
-      container: "map",
-      style: mStyle,
-      center: [mLon, mLat],
-      zoom: mZoom
+  // click -> show popup with alert's 'headline'
+  map.on("click", alertId, (e) => {
+    const props = e.features[0].properties;
+    const popHeadline = props.myHeadline || "N/A";
+    new mapboxgl.Popup()
+      .setLngLat(e.lngLat)
+      .setHTML(`<strong>${popHeadline}</strong>`)
+      .addTo(map);
+  });
+}
+
+/* fallback if geometry=null -> fetch zone geometry */
+async function fetchZoneGeometry(zoneUrl, parentFeature, color) {
+  try {
+    const resp = await fetch(zoneUrl);
+    const data = await resp.json();
+    if (!data.geometry) {
+      console.log("No geometry for zone:", zoneUrl);
+      return;
+    }
+    const zoneFeature = {
+      type: "Feature",
+      geometry: data.geometry,
+      properties: {
+        ...parentFeature.properties
+      }
+    };
+    const zoneId = (parentFeature.id || "alert-") + "-" + data.id;
+
+    map.addSource(zoneId, {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: [zoneFeature]
+      }
+    });
+    map.addLayer({
+      id: zoneId,
+      type: "fill",
+      source: zoneId,
+      paint: {
+        "fill-color": color,
+        "fill-opacity": 0.3
+      }
+    });
+    map.addLayer({
+      id: zoneId + "-border",
+      type: "line",
+      source: zoneId,
+      paint: {
+        "line-color": color,
+        "line-width": 2
+      }
     });
 
-    new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
-    map.on("load", async () => {
-      await fetchRadarData();
-      animateRadar();
-      setInterval(fetchRadarData, 300000); // Refresh radar data every 5 minutes
+    // clickable zone
+    map.on("click", zoneId, (e) => {
+      const props = e.features[0].properties;
+      const popHeadline = props.myHeadline || "N/A";
+      new mapboxgl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(`<strong>${popHeadline}</strong>`)
+        .addTo(map);
+    });
+  } catch (err) {
+    console.error("Error fetching zone geometry for", zoneUrl, err);
+  }
+}
+
+/* Radar animation (3 rotating layers) */
+function animateRadar() {
+  if (radarFrames.length < 2) return;
+  if (!layersSetup) {
+    setupThreeLayers();
+    requestAnimationFrame(cycleFrame);
+  } else {
+    requestAnimationFrame(cycleFrame);
+  }
+}
+
+function setupThreeLayers() {
+  if (radarFrames.length === 0) return;
+  for (let i = 0; i < totalLayers; i++) {
+    const initFrame = radarFrames[Math.min(i, radarFrames.length -1)] || radarFrames[0];
+    map.addSource(`radarSource${i}`, {
+      type: 'raster',
+      tiles: [initFrame],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 12
+    });
+    map.addLayer({
+      id: `radarLayer${i}`,
+      type: 'raster',
+      source: `radarSource${i}`,
+      paint: { 'raster-opacity': (i === 0 ? 1 : 0) }
     });
   }
-
-  async function fetchRadarData() {
-    try {
-      const response = await fetch("https://api.rainviewer.com/public/weather-maps.json?past_hours=6");
-      const apiData = await response.json();
-      radarFrames = apiData.radar.past.map((frame) =>
-        `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
-      );
-    } catch (error) {
-      console.error("Error fetching radar data:", error);
-    }
-  }
-
-  function setupThreeLayers() {
-    if (radarFrames.length === 0) return;
-
-    for (let i = 0; i < totalLayers; i++) {
-      const initFrame = radarFrames[Math.min(i, radarFrames.length - 1)] || radarFrames[0];
-      map.addSource(`radarSource${i}`, { type: 'raster', tiles: [initFrame], tileSize: 256, minzoom: 0, maxzoom: 12 });
-      map.addLayer({ id: `radarLayer${i}`, type: 'raster', source: `radarSource${i}`, paint: { 'raster-opacity': (i === 0 ? 1 : 0) } });
-    }
-    activeLayerIndex = 0;
-    layersSetup = true;
-  }
-
-  function animateRadar() {
-    if (radarFrames.length < 2) return;
-
-    if (!layersSetup) {
-      setupThreeLayers();
-      requestAnimationFrame(cycleFrame);
-    } else {
-      requestAnimationFrame(cycleFrame);
-    }
-  }
+  activeLayerIndex = 0;
+  layersSetup = true;
+}
 
 function cycleFrame() {
-    if (!isPlaying || radarFrames.length < 2) return;
+  if (!isPlaying || radarFrames.length < 2) return;
 
-    const nextFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-    const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;  // Total layers: 3
+  const nextFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+  const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;
+  const activeLayerId  = `radarLayer${activeLayerIndex}`;
+  const newLayerId     = `radarLayer${nextLayerIndex}`;
+  const newSourceId    = `radarSource${nextLayerIndex}`;
 
-    const activeLayerId = `radarLayer${activeLayerIndex}`;
-    const newLayerId = `radarLayer${nextLayerIndex}`;
-    const newSourceId = `radarSource${nextLayerIndex}`;
+  loadFrame(newSourceId, radarFrames[nextFrameIndex]).then(() => {
+    const duration = 500; // .5s fade
+    const startTime = performance.now();
 
-    // Pre-fetch the new frame before transition
-    loadFrame(newSourceId, radarFrames[nextFrameIndex]).then(() => {
-        const duration = 500; // 0.5 seconds for fade transition
-        const startTime = performance.now();
+    function fadeInterval() {
+      if (!isPlaying) return;
+      const elapsed = performance.now() - startTime;
+      const fraction = Math.min(elapsed / duration, 1);
 
-        function fadeInterval() {
-            if (!isPlaying) return;
+      map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
+      map.setPaintProperty(newLayerId,   'raster-opacity', fraction);
 
-            const elapsed = performance.now() - startTime;
-            const fraction = Math.min(elapsed / duration, 1);
+      if (fraction < 1) {
+        requestAnimationFrame(fadeInterval);
+      } else {
+        // done fade
+        currentFrameIndex = nextFrameIndex;
+        activeLayerIndex  = nextLayerIndex;
+        map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
 
-            // Apply smooth transition
-            map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
-            map.setPaintProperty(newLayerId, 'raster-opacity', fraction);
+        // preload next
+        const preloadLayerIndex = (activeLayerIndex + 1) % totalLayers;
+        const preloadSourceId   = `radarSource${preloadLayerIndex}`;
+        const preloadFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+        loadFrame(preloadSourceId, radarFrames[preloadFrameIndex]);
 
-            if (fraction < 1) {
-                requestAnimationFrame(fadeInterval);
-            } else {
-                // Complete the transition
-                currentFrameIndex = nextFrameIndex;
-                activeLayerIndex = nextLayerIndex;
-
-                // Hide the previous layer entirely
-                map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
-
-                // Prepare the third layer for pre-loading the next frame
-                const preloadLayerIndex = (activeLayerIndex + 1) % totalLayers;
-                const preloadSourceId = `radarSource${preloadLayerIndex}`;
-
-                // Preload the upcoming frame (two ahead)
-                const preloadFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-                loadFrame(preloadSourceId, radarFrames[preloadFrameIndex]);
-
-                // Continue to the next frame after a small delay
-                setTimeout(() => requestAnimationFrame(cycleFrame), 100);
-            }
-        }
-
-        fadeInterval();
-    });
-}
-
-// Frame Loader Function
-function loadFrame(sourceId, tileUrl) {
-    return new Promise((resolve) => {
-        map.getSource(sourceId).tiles = [tileUrl];
-        map.once('idle', resolve); // Resolve when the frame is fully loaded
-    });
-}
-
-
-
-  document.getElementById('playPauseBtn').addEventListener('click', () => {
-    isPlaying = !isPlaying;
-    document.getElementById('playPauseBtn').textContent = isPlaying ? 'Pause' : 'Play';
-    if (isPlaying) requestAnimationFrame(cycleFrame);
+        setTimeout(() => requestAnimationFrame(cycleFrame), 100);
+      }
+    }
+    fadeInterval();
   });
+}
+
+function loadFrame(sourceId, tileUrl) {
+  return new Promise((resolve) => {
+    map.getSource(sourceId).tiles = [tileUrl];
+    map.once('idle', resolve);
+  });
+}
+
+// Play/Pause Button
+document.getElementById('playPauseBtn').addEventListener('click', () => {
+  isPlaying = !isPlaying;
+  document.getElementById('playPauseBtn').textContent = isPlaying ? 'Pause' : 'Play';
+  if (isPlaying) requestAnimationFrame(cycleFrame);
+});
 </script>
