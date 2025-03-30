@@ -63,17 +63,18 @@
     overflow-y: auto;
     color: black;
   }
+
   #animationProgress {
-    position: absolute;
-    width: 65%;
-    left: 80px;
-    right: 10px;
-    bottom: 25px;
-    height: 6px;
-    background-color: #ccc;
-    border-radius: 3px;
-    z-index: 10;
-  }
+  position: absolute;
+  left: 80px;
+  bottom: 25px;
+  height: 6px;
+  width: calc(100% - 170px); /* 80px + 10px */
+  background-color: #ccc;
+  border-radius: 3px;
+  z-index: 10;
+}
+
   #progressDot {
     position: absolute;
     top: 50%;
