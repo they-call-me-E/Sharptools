@@ -19,43 +19,196 @@
     },
     {"type": "STRING", "name": "statesAlerts", "label": "NC  or NC,SC,GA,TN"}
   ],
-  "name": "xWeather",
+  "name": "Rain Viewer",
   "dimensions": {"height": 3, "width": 3}
 }
 </script>
 <!-- Do not edit above -->
 
 <style>
-  /* Hide the compact attribution control */
+  /* MAPBOX AND LAYOUT STYLES */
   .mapboxgl-ctrl-attrib.mapboxgl-compact { display: none !important; }
-  /* Hide all Mapbox controls */
   .mapboxgl-ctrl { display: none !important; }
-  /* Play/Pause Button Styles */
-  #controls { position: absolute; top: 10px; right: 10px; z-index: 10; }
-  #playPauseBtn { padding: 5px 10px; font-size: 16px; }
-
-  /* OPTIONAL: Customize the popup content style to have white text (and a custom background if you want) */
+  #map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+  }
+  #legendButton {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: white;
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    z-index: 10;
+    color: #333;
+    font-size: 18px;
+    line-height: 18px;
+    font-weight: bold;
+  }
+  #legendButton:hover { background: #f0f0f0; }
+  #legendPopup {
+    position: absolute;
+    top: 90px;
+    left: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 3px;
+    display: none;
+    z-index: 10;
+    max-height: 300px;
+    overflow-y: auto;
+    color: black;
+  }
+  #animationProgress {
+    position: absolute;
+    width: 65%;
+    left: 80px;
+    right: 10px;
+    bottom: 25px;
+    height: 6px;
+    background-color: #ccc;
+    border-radius: 3px;
+    z-index: 10;
+  }
+  #progressDot {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    background-color: grey;
+    border-radius: 50%;
+    transform: translateY(-50%);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+    border: 1px solid #000;
+  }
   .mapboxgl-popup-content {
-    color: black; /* text color is white */
-    background-color: rgba(0,0,0,0.7); /* translucent black background if desired */
+    color: black;
+    background-color: rgba(0,0,0,0.7);
     border-radius: 6px;
     padding: 8px;
+  }
+  .popup-divider {
+    margin: 8px 0;
+    border: none;
+    border-top: 1px solid #ccc;
+  }
+  .popup-description {
+    display: none;
+    max-height: 100px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .popup-more-link {
+    float: right;
+    cursor: pointer;
+    color: blue;
+    text-decoration: underline;
+    margin-top: 5px;
+  }
+  /* NEW: Time display overlay style */
+  #timeDisplay {
+    position: absolute;
+    bottom: 10px;
+    right: 0px;
+    /* background: rgba(255,255,255,0.8); */
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    z-index: 10;
+  }
+
+  /* FANCY PLAY/PAUSE BUTTON STYLES */
+  .play,
+  .play::before,
+  .play::after {
+    width: 100px;
+    height: 100px;
+    transition: 0.15s ease;
+  }
+  .play {
+    overflow: hidden;
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    border-radius: 25px;
+    transform: scale(0.25) translate(-32px, 0px) rotate(120deg) skewY(30deg) scaleX(0.866);
+    transition: 0.35s cubic-bezier(0.5, 2, 0.7, 1);
+  }
+  .play:active {
+    transform: scale(0.25) translate(-22px, 0px) rotate(120deg) skewY(30deg) scaleX(0.606) scaleY(0.7);
+  }
+  .play::before,
+  .play::after {
+    content: "";
+    position: absolute;
+    background: white;
+    cursor: pointer;
+  }
+  .play::before {
+    border-radius: 25px 25px 25px 50px;
+    transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg)
+               translate(-24px, -42px) skewX(30deg) scaleY(0.8666);
+  }
+  .play::after {
+    border-radius: 25px 25px 50px 25px;
+    transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg)
+               translate(24px, -42px) skewX(-30deg) scaleY(0.8666);
+  }
+  .play.paused {
+    transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scaleX(1);
+    cursor: pointer;
+  }
+  .play.paused:active {
+    transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scale(0.7);
+  }
+  .play.paused::before {
+    height: 85px;
+    width: 30px;
+    transform: scale(1) skewY(0deg) rotate(-90deg) translate(21px, 35px) skewX(0deg);
+    border-radius: 10px;
+  }
+  .play.paused::after {
+    height: 85px;
+    width: 30px;
+    transform: scale(1) skewY(0deg) rotate(-90deg) translate(-21px, 35px) skewX(0deg);
+    border-radius: 10px;
   }
 </style>
 
 <meta charset="utf-8">
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<!-- Mapbox GL JS v2.x -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="//cdn.sharptools.io/js/custom-tiles.js"></script>
-<script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.js"></script>
-<link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.3.1/mapbox-gl.css" rel="stylesheet">
 
-<div id="map" style="position: absolute; top: 0; bottom: 0; width: 100%;"></div>
-<div id="controls">
-  <button id="playPauseBtn">Pause</button>
+<div id="map"></div>
+<!-- Fancy play/pause button -->
+<div class="play" id="playPauseBtn" onclick="this.classList.toggle('paused')"></div>
+<!-- NEW: Time display element -->
+<div id="timeDisplay"></div>
+<div id="legendButton">☰</div>
+<div id="legendPopup"></div>
+<div id="animationProgress">
+  <div id="progressDot"></div>
 </div>
 
 <script>
-// NOAA Alert -> Color dictionary
+/* NOAA ALERT COLORS */
 const ALERT_COLORS = {
   "Tornado Warning": "red",
   "Severe Thunderstorm Warning": "orange",
@@ -81,38 +234,48 @@ const ALERT_COLORS = {
   "Fire Weather Warning": "red",
   "Special Marine Warning": "blue",
   "Air Quality Alert": "gray",
-  // fallback color
+  "Special Weather Statement": "lightgray",
   "default": "gray"
 };
 
-var mLat = 35;
-var mLon = -83;
-var mZoom = 5;
-var radarFrames = [];
-var currentFrameIndex = 0;
-var mToken;
-var wStyle = 1;
-var mStyle = "mapbox://styles/mapbox/dark-v11";
-var stateAlerts = "NC,SC,GA,TN"
+/* ANIMATION VARIABLES: adjust these to change speed and fade */
+const ANIMATION_INTERVAL_MS = 1500; // time between frames
+const FADE_DURATION_MS = 150;         // crossfade duration
+const INITIAL_FADE_MS = 600;          // fade-in time for first frame
 
-var totalLayers = 3;
-var activeLayerIndex = 0;
-var layersSetup = false;
-var isPlaying = true;
-var map;
+/* MAP + RADAR SETUP VARIABLES */
+let mLat = 35;
+let mLon = -83;
+let mZoom = 5;
+let radarFrames = [];
+let radarFrameTimes = []; // NEW: store timestamps for each frame
+let currentFrameIndex = 0;
+let mToken;
+let wStyle = 1;
+let mStyle = "mapbox://styles/mapbox/dark-v11";
+let stateAlerts = "NC,SC,GA,TN";
+let map;
 
-/* stio.ready logic for Sharptools settings */
+let isPlaying = true;   // determined by whether #playPauseBtn has "paused"
+let activeBuffer = "A"; // double-buffer: "A" or "B"
+
+// 2-second pause at end of loop
+const END_OF_LOOP_PAUSE_MS = 2000;
+let pauseActive = false;
+let pauseStartTime = 0;
+
+// For preloading frames
+let framesLoadedCount = 0;
+
 stio.ready((data) => {
   if (data.settings.mToken) {
     mToken = data.settings.mToken;
-
     if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
     if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
     if (isNaN(mLat) || isNaN(mLon)) {
-      console.error('Error: Invalid mLat or mLon. Ensure valid numbers.');
+      console.error('Error: Invalid lat/lon');
       return;
     }
-
     mZoom = data.settings.mZoom || mZoom;
     wStyle = data.settings.wStyle || wStyle;
     stateAlerts = data.settings.statesAlerts || stateAlerts;
@@ -120,76 +283,217 @@ stio.ready((data) => {
     if (data.settings.mStyle == 2) mStyle = "mapbox://styles/mapbox/light-v11";
     if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
     if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
-
     mapboxgl.accessToken = mToken;
     initializeMap();
   }
 });
 
-function initializeMap() {
+/** Initialize Map, then load radar+alerts, preload frames, and start animation */
+async function initializeMap() {
   map = new mapboxgl.Map({
     container: "map",
     style: mStyle,
     center: [mLon, mLat],
     zoom: mZoom
   });
-
-  // optional marker
   new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
-
   map.on("load", async () => {
     await fetchRadarData();
     await fetchNoaaAlerts();
-    animateRadar();
-    // refresh radar data every 5 minutes
-    setInterval(fetchRadarData, 300000);
+    preloadAllFrames(radarFrames, () => {
+      console.log("All frames preloaded. Starting animation...");
+      setupBuffers();
+      map.once("idle", () => {
+        fadeLayerIn("radarLayerA", INITIAL_FADE_MS);
+        updateTimeDisplay(currentFrameIndex);
+      });
+      animateRadar();
+    });
+    setInterval(fetchRadarData, 300000); // refresh frames every 5 min
   });
 }
 
-/* RAINVIEWER Radar Data */
+/** Fetch Radar Data from RainViewer and store frame timestamps */
 async function fetchRadarData() {
   try {
     const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
     const response = await fetch(url);
     const apiData = await response.json();
+    // Store the URLs and the corresponding timestamps
     radarFrames = apiData.radar.past.map(frame =>
       `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
     );
+    radarFrameTimes = apiData.radar.past.map(frame => frame.time);
     console.log("Radar frames loaded:", radarFrames.length);
-  } catch (error) {
-    console.error("Error fetching radar data:", error);
+  } catch (err) {
+    console.error("Error fetching radar data:", err);
   }
 }
 
-/* NOAA Alerts for TN, NC, SC, GA */
+/** Preload all frames using <img> objects */
+function preloadAllFrames(urls, onComplete) {
+  if (!urls.length) {
+    onComplete();
+    return;
+  }
+  framesLoadedCount = 0;
+  urls.forEach((url) => {
+    const img = new Image();
+    img.src = url + `?preload=${Date.now()}`;
+    img.onload = () => {
+      framesLoadedCount++;
+      if (framesLoadedCount === urls.length) onComplete();
+    };
+    img.onerror = () => {
+      framesLoadedCount++;
+      if (framesLoadedCount === urls.length) onComplete();
+    };
+  });
+}
+
+/** Setup buffers A and B at 0 opacity */
+function setupBuffers() {
+  if (radarFrames.length) {
+    createRadarLayer("radarSourceA", "radarLayerA", radarFrames[0], 0);
+  }
+  createRadarLayer("radarSourceB", "radarLayerB",
+    radarFrames.length ? radarFrames[0] : "", 0);
+  updateProgressBar(0);
+}
+
+/** Helper: Create a raster source+layer with given initial opacity */
+function createRadarLayer(sourceId, layerId, tileUrl, initOpacity) {
+  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+  if (!tileUrl) return;
+  map.addSource(sourceId, {
+    type: 'raster',
+    tiles: [ tileUrl ],
+    tileSize: 256,
+    minzoom: 0,
+    maxzoom: 12
+  });
+  map.addLayer({
+    id: layerId,
+    type: 'raster',
+    source: sourceId,
+    paint: { 'raster-opacity': initOpacity }
+  });
+}
+
+/** Fade a layer from 0 -> 1 */
+function fadeLayerIn(layerId, durationMs) {
+  const startTime = performance.now();
+  function step(now) {
+    const elapsed = now - startTime;
+    const fraction = Math.min(elapsed / durationMs, 1);
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(layerId, 'raster-opacity', fraction);
+    }
+    if (fraction < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/** Main animation loop using double-buffer crossfade */
+function animateRadar() {
+  if (radarFrames.length < 2) return;
+  setInterval(() => {
+    const playPauseEl = document.getElementById('playPauseBtn');
+    isPlaying = !playPauseEl.classList.contains('paused');
+    if (!isPlaying) return;
+    if (pauseActive) {
+      if (Date.now() - pauseStartTime >= END_OF_LOOP_PAUSE_MS) {
+        pauseActive = false;
+      } else {
+        return;
+      }
+    }
+    crossfadeNextFrame();
+    updateProgressBar(currentFrameIndex);
+    updateTimeDisplay(currentFrameIndex);
+    if (currentFrameIndex === radarFrames.length - 1) {
+      pauseActive = true;
+      pauseStartTime = Date.now();
+    }
+    currentFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+  }, ANIMATION_INTERVAL_MS);
+}
+
+/** Crossfade to the next frame using buffers A/B */
+function crossfadeNextFrame() {
+  const oldBuf = activeBuffer;
+  const newBuf = (oldBuf === "A") ? "B" : "A";
+  const oldLayerId = "radarLayer" + oldBuf;
+  const newLayerId = "radarLayer" + newBuf;
+  const newSourceId = "radarSource" + newBuf;
+  const frameUrl = radarFrames[currentFrameIndex];
+  console.log(`Frame ${currentFrameIndex} => buffer ${newBuf}`, frameUrl);
+  createRadarLayer(newSourceId, newLayerId, frameUrl, 0);
+  map.once("idle", () => {
+    fadeLayers(oldLayerId, newLayerId, FADE_DURATION_MS);
+  });
+  activeBuffer = newBuf;
+}
+
+/** Fade out the old layer while fading in the new layer */
+function fadeLayers(layerOut, layerIn, durationMs) {
+  const startTime = performance.now();
+  function step(now) {
+    const elapsed = now - startTime;
+    const fraction = Math.min(elapsed / durationMs, 1);
+    if (map.getLayer(layerOut)) {
+      map.setPaintProperty(layerOut, 'raster-opacity', 1 - fraction);
+    }
+    if (map.getLayer(layerIn)) {
+      map.setPaintProperty(layerIn, 'raster-opacity', fraction);
+    }
+    if (fraction < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/** Update the progress bar dot */
+function updateProgressBar(frameIndex) {
+  const dot = document.getElementById('progressDot');
+  if (!radarFrames || radarFrames.length < 2) {
+    dot.style.left = '0%';
+    return;
+  }
+  const fraction = frameIndex / (radarFrames.length - 1);
+  dot.style.left = (fraction * 100) + '%';
+}
+
+/** Update the time display overlay with the current frame's timestamp */
+function updateTimeDisplay(frameIndex) {
+  if (radarFrameTimes.length > 0) {
+    // Convert UNIX timestamp (seconds) to local Date object
+    let timestamp = radarFrameTimes[frameIndex];
+    let date = new Date(timestamp * 1000);
+    // Format time in 12-hour clock: hour:minute am/pm
+    let options = { hour: 'numeric', minute: 'numeric', hour12: true };
+    let timeString = date.toLocaleTimeString([], options);
+    document.getElementById("timeDisplay").textContent = timeString;
+  }
+}
+
+/** NOAA Alerts (unchanged) */
 async function fetchNoaaAlerts() {
   const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
-
   try {
     const response = await fetch(alertUrl);
     const data = await response.json();
     if (!data.features) {
-      console.log("No NOAA alerts found for ${statesAlerts}");
+      console.log("No NOAA alerts found for:", stateAlerts);
       return;
     }
     console.log("NOAA Alerts found:", data.features.length);
-
     for (const feature of data.features) {
       const eventType = feature.properties.event || "default";
       const alertColor = ALERT_COLORS[eventType] || ALERT_COLORS["default"];
       const headline = feature.properties.headline || "N/A";
-      // store 'headline' in properties for popup
-      const updatedProps = {
-        ...feature.properties,
-        fillColor: alertColor,
-        myHeadline: headline
-      };
-      // clone feature
-      const newFeature = {
-        ...feature,
-        properties: updatedProps
-      };
-
+      const updatedProps = { ...feature.properties, fillColor: alertColor, myHeadline: headline };
+      const newFeature = { ...feature, properties: updatedProps };
       if (newFeature.geometry) {
         addAlertPolygon(newFeature, alertColor);
       } else {
@@ -208,44 +512,26 @@ function addAlertPolygon(feature, color) {
   const alertId = feature.id || ("alert-" + Math.random());
   map.addSource(alertId, {
     type: "geojson",
-    data: {
-      type: "FeatureCollection",
-      features: [feature]
-    }
+    data: { type: "FeatureCollection", features: [feature] }
   });
-  // fill
   map.addLayer({
     id: alertId,
     type: "fill",
     source: alertId,
-    paint: {
-      "fill-color": color,
-      "fill-opacity": 0.3
-    }
+    paint: { "fill-color": color, "fill-opacity": 0.3 }
   });
-  // border
   map.addLayer({
     id: alertId + "-border",
     type: "line",
     source: alertId,
-    paint: {
-      "line-color": color,
-      "line-width": 2
-    }
+    paint: { "line-color": color, "line-width": 2 }
   });
-
-  // click -> show popup with alert's 'headline'
   map.on("click", alertId, (e) => {
     const props = e.features[0].properties;
-    const popHeadline = props.myHeadline || "N/A";
-    new mapboxgl.Popup()
-      .setLngLat(e.lngLat)
-      .setHTML(`<strong>${popHeadline}</strong>`)
-      .addTo(map);
+    showAlertPopup(e.lngLat, props);
   });
 }
 
-/* fallback if geometry=null -> fetch zone geometry */
 async function fetchZoneGeometry(zoneUrl, parentFeature, color) {
   try {
     const resp = await fetch(zoneUrl);
@@ -254,141 +540,93 @@ async function fetchZoneGeometry(zoneUrl, parentFeature, color) {
       console.log("No geometry for zone:", zoneUrl);
       return;
     }
-    const zoneFeature = {
-      type: "Feature",
-      geometry: data.geometry,
-      properties: {
-        ...parentFeature.properties
-      }
-    };
+    const zoneFeature = { type: "Feature", geometry: data.geometry, properties: { ...parentFeature.properties } };
     const zoneId = (parentFeature.id || "alert-") + "-" + data.id;
-
     map.addSource(zoneId, {
       type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features: [zoneFeature]
-      }
+      data: { type: "FeatureCollection", features: [zoneFeature] }
     });
     map.addLayer({
       id: zoneId,
       type: "fill",
       source: zoneId,
-      paint: {
-        "fill-color": color,
-        "fill-opacity": 0.3
-      }
+      paint: { "fill-color": color, "fill-opacity": 0.3 }
     });
     map.addLayer({
       id: zoneId + "-border",
       type: "line",
       source: zoneId,
-      paint: {
-        "line-color": color,
-        "line-width": 2
-      }
+      paint: { "line-color": color, "line-width": 2 }
     });
-
-    // clickable zone
     map.on("click", zoneId, (e) => {
       const props = e.features[0].properties;
-      const popHeadline = props.myHeadline || "N/A";
-      new mapboxgl.Popup()
-        .setLngLat(e.lngLat)
-        .setHTML(`<strong>${popHeadline}</strong>`)
-        .addTo(map);
+      showAlertPopup(e.lngLat, props);
     });
   } catch (err) {
     console.error("Error fetching zone geometry for", zoneUrl, err);
   }
 }
 
-/* Radar animation (3 rotating layers) */
-function animateRadar() {
-  if (radarFrames.length < 2) return;
-  if (!layersSetup) {
-    setupThreeLayers();
-    requestAnimationFrame(cycleFrame);
-  } else {
-    requestAnimationFrame(cycleFrame);
-  }
-}
-
-function setupThreeLayers() {
-  if (radarFrames.length === 0) return;
-  for (let i = 0; i < totalLayers; i++) {
-    const initFrame = radarFrames[Math.min(i, radarFrames.length -1)] || radarFrames[0];
-    map.addSource(`radarSource${i}`, {
-      type: 'raster',
-      tiles: [initFrame],
-      tileSize: 256,
-      minzoom: 0,
-      maxzoom: 12
-    });
-    map.addLayer({
-      id: `radarLayer${i}`,
-      type: 'raster',
-      source: `radarSource${i}`,
-      paint: { 'raster-opacity': (i === 0 ? 1 : 0) }
-    });
-  }
-  activeLayerIndex = 0;
-  layersSetup = true;
-}
-
-function cycleFrame() {
-  if (!isPlaying || radarFrames.length < 2) return;
-
-  const nextFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-  const nextLayerIndex = (activeLayerIndex + 1) % totalLayers;
-  const activeLayerId  = `radarLayer${activeLayerIndex}`;
-  const newLayerId     = `radarLayer${nextLayerIndex}`;
-  const newSourceId    = `radarSource${nextLayerIndex}`;
-
-  loadFrame(newSourceId, radarFrames[nextFrameIndex]).then(() => {
-    const duration = 500; // .5s fade
-    const startTime = performance.now();
-
-    function fadeInterval() {
-      if (!isPlaying) return;
-      const elapsed = performance.now() - startTime;
-      const fraction = Math.min(elapsed / duration, 1);
-
-      map.setPaintProperty(activeLayerId, 'raster-opacity', 1 - fraction);
-      map.setPaintProperty(newLayerId,   'raster-opacity', fraction);
-
-      if (fraction < 1) {
-        requestAnimationFrame(fadeInterval);
+function showAlertPopup(lngLat, props) {
+  const headline = props.myHeadline || "N/A";
+  const descriptionFull = props.description || "No further details provided.";
+  const popupContent = document.createElement('div');
+  popupContent.innerHTML = `<strong>${headline}</strong>`;
+  const divider = document.createElement('hr');
+  divider.className = 'popup-divider';
+  divider.style.display = 'none';
+  popupContent.appendChild(divider);
+  const descDiv = document.createElement('div');
+  descDiv.className = 'popup-description';
+  descDiv.textContent = descriptionFull;
+  popupContent.appendChild(descDiv);
+  const toggleLink = document.createElement('span');
+  toggleLink.className = 'popup-more-link';
+  toggleLink.textContent = 'More';
+  if (descriptionFull.trim() && descriptionFull !== 'No further details provided.') {
+    toggleLink.addEventListener('click', () => {
+      if (descDiv.style.display === 'none') {
+        descDiv.style.display = 'block';
+        divider.style.display = 'block';
+        toggleLink.textContent = 'Less';
       } else {
-        // done fade
-        currentFrameIndex = nextFrameIndex;
-        activeLayerIndex  = nextLayerIndex;
-        map.setPaintProperty(activeLayerId, 'raster-opacity', 0);
-
-        // preload next
-        const preloadLayerIndex = (activeLayerIndex + 1) % totalLayers;
-        const preloadSourceId   = `radarSource${preloadLayerIndex}`;
-        const preloadFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-        loadFrame(preloadSourceId, radarFrames[preloadFrameIndex]);
-
-        setTimeout(() => requestAnimationFrame(cycleFrame), 100);
+        descDiv.style.display = 'none';
+        divider.style.display = 'none';
+        toggleLink.textContent = 'More';
       }
-    }
-    fadeInterval();
-  });
+    });
+  } else {
+    toggleLink.style.display = 'none';
+  }
+  popupContent.appendChild(toggleLink);
+  new mapboxgl.Popup().setLngLat(lngLat).setDOMContent(popupContent).addTo(map);
 }
 
-function loadFrame(sourceId, tileUrl) {
-  return new Promise((resolve) => {
-    map.getSource(sourceId).tiles = [tileUrl];
-    map.once('idle', resolve);
-  });
+/** LEGEND */
+function buildLegend() {
+  const legendPopup = document.getElementById('legendPopup');
+  legendPopup.innerHTML = '';
+  for (const [eventType, color] of Object.entries(ALERT_COLORS)) {
+    if (eventType === 'default') continue;
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'legend-item';
+    const colorBox = document.createElement('div');
+    colorBox.className = 'legend-color';
+    colorBox.style.backgroundColor = color;
+    const label = document.createElement('span');
+    label.textContent = eventType;
+    itemDiv.appendChild(colorBox);
+    itemDiv.appendChild(label);
+    legendPopup.appendChild(itemDiv);
+  }
 }
-
-// Play/Pause Button
-document.getElementById('playPauseBtn').addEventListener('click', () => {
-  isPlaying = !isPlaying;
-  document.getElementById('playPauseBtn').textContent = isPlaying ? 'Pause' : 'Play';
-  if (isPlaying) requestAnimationFrame(cycleFrame);
+document.getElementById('legendButton').addEventListener('click', () => {
+  const legendPopup = document.getElementById('legendPopup');
+  if (!legendPopup.hasChildNodes()) {
+    buildLegend();
+  }
+  legendPopup.style.display = (legendPopup.style.display === 'none' || !legendPopup.style.display)
+    ? 'block'
+    : 'none';
 });
 </script>
