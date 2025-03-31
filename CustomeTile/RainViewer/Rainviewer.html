@@ -26,169 +26,213 @@
 <!-- Do not edit above -->
 
 <style>
-  /* MAPBOX AND LAYOUT STYLES */
-  .mapboxgl-ctrl-attrib.mapboxgl-compact { display: none !important; }
-  .mapboxgl-ctrl { display: none !important; }
-  #map {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    left: 0;
-  }
-  #legendButton {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: white;
-    padding: 6px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    z-index: 10;
-    color: #333;
-    font-size: 18px;
-    line-height: 18px;
-    font-weight: bold;
-  }
-  #legendButton:hover { background: #f0f0f0; }
-  #legendPopup {
-    position: absolute;
-    top: 90px;
-    left: 10px;
-    background: white;
-    padding: 10px;
-    border-radius: 3px;
-    display: none;
-    z-index: 10;
-    max-height: 300px;
-    overflow-y: auto;
-    color: black;
-  }
+    /* MAPBOX AND LAYOUT STYLES */
+    .mapboxgl-ctrl-attrib.mapboxgl-compact {
+        display: none !important;
+    }
+    .mapboxgl-ctrl {
+        display: none !important;
+    }
+    #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        left: 0;
+    }
+    /* Removed legendButton and legendPopup styles */
 
-  #animationProgress {
-  position: absolute;
-  left: 80px;
-  bottom: 25px;
-  height: 6px;
-  width: calc(100% - 170px); /* 80px + 10px */
-  background-color: #ccc;
-  border-radius: 3px;
-  z-index: 10;
+    #animationProgress {
+        position: absolute;
+        left: 80px;
+        bottom: 25px;
+        height: 6px;
+        width: calc(100% - 170px); /* Adjusts to window width */
+        background-color: #ccc;
+        border-radius: 3px;
+        z-index: 10;
+    }
+    #progressDot {
+        position: absolute;
+        top: 50%;
+        width: 12px;
+        height: 12px;
+        background-color: grey;
+        border-radius: 50%;
+        transform: translateY(-50%);
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        border: 1px solid #000;
+    }
+    .mapboxgl-popup-content {
+        color: black;
+        background-color: rgba(0, 0, 0, 0.7);
+        border-radius: 6px;
+        padding: 8px;
+    }
+    .popup-divider {
+        margin: 8px 0;
+        border: none;
+        border-top: 1px solid #ccc;
+    }
+    .popup-description {
+        display: none;
+        max-height: 100px;
+        overflow-y: auto;
+        margin-top: 4px;
+    }
+    .popup-more-link {
+        float: right;
+        cursor: pointer;
+        color: blue;
+        text-decoration: underline;
+        margin-top: 5px;
+    }
+    /* NEW: Time display overlay style */
+    #timeDisplay {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        z-index: 10;
+    }
+    /* NEW: Spinner overlay style */
+    #spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 20;
+        width: 50px;
+        height: 50px;
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    /* FANCY PLAY/PAUSE BUTTON STYLES */
+    .play,
+    .play::before,
+    .play::after {
+        width: 100px;
+        height: 100px;
+        transition: 0.15s ease;
+    }
+    .play {
+        overflow: hidden;
+        position: absolute;
+        bottom: -20px;
+        left: 0;
+        border-radius: 25px;
+        transform: scale(0.25) translate(-32px, 0px) rotate(120deg) skewY(30deg) scaleX(0.866);
+        transition: 0.35s cubic-bezier(0.5, 2, 0.7, 1);
+    }
+    .play:active {
+        transform: scale(0.25) translate(-22px, 0px) rotate(120deg) skewY(30deg) scaleX(0.606) scaleY(0.7);
+    }
+    .play::before,
+    .play::after {
+        content: "";
+        position: absolute;
+        background: white;
+        cursor: pointer;
+    }
+    .play::before {
+        border-radius: 25px 25px 25px 50px;
+        transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg) translate(-24px, -42px) skewX(30deg) scaleY(0.8666);
+    }
+    .play::after {
+        border-radius: 25px 25px 50px 25px;
+        transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg) translate(24px, -42px) skewX(-30deg) scaleY(0.8666);
+    }
+    .play.paused {
+        transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scaleX(1);
+        cursor: pointer;
+    }
+    .play.paused:active {
+        transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scale(0.7);
+    }
+    .play.paused::before {
+        height: 85px;
+        width: 30px;
+        transform: scale(1) skewY(0deg) rotate(-90deg) translate(21px, 35px) skewX(0deg);
+        border-radius: 10px;
+    }
+    .play.paused::after {
+        height: 85px;
+        width: 30px;
+        transform: scale(1) skewY(0deg) rotate(-90deg) translate(-21px, 35px) skewX(0deg);
+        border-radius: 10px;
+    }
+    /* === NEW: Slide-in Menu Styles === */
+    #menuButton {
+        position: fixed;
+        top: 10px;
+        right: 20px;
+        z-index: 60;
+        background: white;
+        border: none;
+        cursor: pointer;
+        padding: 0px;
+        border-radius: 3px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    #menuButton svg {
+        width: 24px;
+        height: 24px;
+        fill: black;
+    }
+   #sideMenu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 250px;
+    max-height: 100vh;
+    background: white;
+    color: black;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 50;
+    padding: 20px;
+    padding-bottom: 40px; /* Extra bottom padding for scrolling */
+    overflow-y: auto;
+    box-sizing: border-box; /* Include padding in height */
 }
 
-  #progressDot {
-    position: absolute;
-    top: 50%;
-    width: 12px;
-    height: 12px;
-    background-color: grey;
-    border-radius: 50%;
-    transform: translateY(-50%);
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 5px;
-  }
-  .legend-color {
-    width: 20px;
-    height: 20px;
-    margin-right: 5px;
-    border: 1px solid #000;
-  }
-  .mapboxgl-popup-content {
-    color: black;
-    background-color: rgba(0,0,0,0.7);
-    border-radius: 6px;
-    padding: 8px;
-  }
-  .popup-divider {
-    margin: 8px 0;
-    border: none;
-    border-top: 1px solid #ccc;
-  }
-  .popup-description {
-    display: none;
-    max-height: 100px;
-    overflow-y: auto;
-    margin-top: 4px;
-  }
-  .popup-more-link {
-    float: right;
-    cursor: pointer;
-    color: blue;
-    text-decoration: underline;
-    margin-top: 5px;
-  }
-  /* NEW: Time display overlay style */
-  #timeDisplay {
-    position: absolute;
-    bottom: 10px;
-    right: 0px;
-    /* background: rgba(255,255,255,0.8); */
-    padding: 5px 10px;
-    border-radius: 3px;
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    z-index: 10;
-  }
-
-  /* FANCY PLAY/PAUSE BUTTON STYLES */
-  .play,
-  .play::before,
-  .play::after {
-    width: 100px;
-    height: 100px;
-    transition: 0.15s ease;
-  }
-  .play {
-    overflow: hidden;
-    position: absolute;
-    bottom: -20px;
-    left: 0;
-    border-radius: 25px;
-    transform: scale(0.25) translate(-32px, 0px) rotate(120deg) skewY(30deg) scaleX(0.866);
-    transition: 0.35s cubic-bezier(0.5, 2, 0.7, 1);
-  }
-  .play:active {
-    transform: scale(0.25) translate(-22px, 0px) rotate(120deg) skewY(30deg) scaleX(0.606) scaleY(0.7);
-  }
-  .play::before,
-  .play::after {
-    content: "";
-    position: absolute;
-    background: white;
-    cursor: pointer;
-  }
-  .play::before {
-    border-radius: 25px 25px 25px 50px;
-    transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg)
-               translate(-24px, -42px) skewX(30deg) scaleY(0.8666);
-  }
-  .play::after {
-    border-radius: 25px 25px 50px 25px;
-    transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg)
-               translate(24px, -42px) skewX(-30deg) scaleY(0.8666);
-  }
-  .play.paused {
-    transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scaleX(1);
-    cursor: pointer;
-  }
-  .play.paused:active {
-    transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scale(0.7);
-  }
-  .play.paused::before {
-    height: 85px;
-    width: 30px;
-    transform: scale(1) skewY(0deg) rotate(-90deg) translate(21px, 35px) skewX(0deg);
-    border-radius: 10px;
-  }
-  .play.paused::after {
-    height: 85px;
-    width: 30px;
-    transform: scale(1) skewY(0deg) rotate(-90deg) translate(-21px, 35px) skewX(0deg);
-    border-radius: 10px;
-  }
+    #sideMenu.open {
+        transform: translateX(0);
+    }
+    #sideMenu h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+    #sideMenu h4 {
+        margin-bottom: 10px;
+    }
+    #sideMenu label {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+    #sideMenu button {
+        display: none; /* Removed legend button */
+    }
 </style>
 
 <meta charset="utf-8">
@@ -197,438 +241,587 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="//cdn.sharptools.io/js/custom-tiles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+<!-- === NEW: Menu Button and Side Menu Markup === -->
+<button id="menuButton" title="Layers">
+  <!-- Inline Layers SVG Icon -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-10v2h18V7H3z"/>
+  </svg>
+</button>
+<div id="sideMenu">
+  <h3>Menu</h3>
+  <label><input type="checkbox" id="menuCounties" checked> Counties</label>
+  <h4>Alert Types</h4>
+  <div id="alertFilters"></div>
+</div>
 
 <div id="map"></div>
+<!-- Spinner overlay; visible until preloading is complete -->
+<div id="spinner"></div>
 <!-- Fancy play/pause button -->
 <div class="play" id="playPauseBtn" onclick="this.classList.toggle('paused')"></div>
-<!-- NEW: Time display element -->
+<!-- Time display overlay -->
 <div id="timeDisplay"></div>
-<div id="legendButton">☰</div>
-<div id="legendPopup"></div>
+<!-- Removed legendButton and legendPopup -->
 <div id="animationProgress">
-  <div id="progressDot"></div>
+    <div id="progressDot"></div>
 </div>
 
 <script>
-/* NOAA ALERT COLORS */
-const ALERT_COLORS = {
-  "Tornado Warning": "red",
-  "Severe Thunderstorm Warning": "orange",
-  "Flash Flood Warning": "darkgreen",
-  "Hurricane Warning": "purple",
-  "Tropical Storm Warning": "blue",
-  "Tornado Watch": "yellow",
-  "Severe Thunderstorm Watch": "yellow",
-  "Hurricane Watch": "plum",
-  "Tropical Storm Watch": "lightblue",
-  "Flood Warning": "darkgreen",
-  "Flood Watch": "lightgreen",
-  "Coastal Flood Warning": "teal",
-  "Coastal Flood Watch": "lightseagreen",
-  "Winter Storm Warning": "pink",
-  "Winter Storm Watch": "lightpink",
-  "Blizzard Warning": "white",
-  "Wind Chill Warning": "lightblue",
-  "High Wind Warning": "brown",
-  "Wind Advisory": "tan",
-  "Heat Advisory": "orange",
-  "Excessive Heat Warning": "darkorange",
-  "Fire Weather Warning": "red",
-  "Special Marine Warning": "blue",
-  "Air Quality Alert": "gray",
-  "Special Weather Statement": "lightgray",
-  "default": "gray"
-};
-
-/* ANIMATION VARIABLES: adjust these to change speed and fade */
-const ANIMATION_INTERVAL_MS = 1500; // time between frames
-const FADE_DURATION_MS = 150;         // crossfade duration
-const INITIAL_FADE_MS = 600;          // fade-in time for first frame
-
-/* MAP + RADAR SETUP VARIABLES */
-let mLat = 35;
-let mLon = -83;
-let mZoom = 5;
-let radarFrames = [];
-let radarFrameTimes = []; // NEW: store timestamps for each frame
-let currentFrameIndex = 0;
-let mToken;
-let wStyle = 1;
-let mStyle = "mapbox://styles/mapbox/dark-v11";
-let stateAlerts = "NC,SC,GA,TN";
-let map;
-
-let isPlaying = true;   // determined by whether #playPauseBtn has "paused"
-let activeBuffer = "A"; // double-buffer: "A" or "B"
-
-// 2-second pause at end of loop
-const END_OF_LOOP_PAUSE_MS = 2000;
-let pauseActive = false;
-let pauseStartTime = 0;
-
-// For preloading frames
-let framesLoadedCount = 0;
-
-stio.ready((data) => {
-  if (data.settings.mToken) {
-    mToken = data.settings.mToken;
-    if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
-    if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
-    if (isNaN(mLat) || isNaN(mLon)) {
-      console.error('Error: Invalid lat/lon');
-      return;
-    }
-    mZoom = data.settings.mZoom || mZoom;
-    wStyle = data.settings.wStyle || wStyle;
-    stateAlerts = data.settings.statesAlerts || stateAlerts;
-    if (data.settings.mStyle == 1) mStyle = "mapbox://styles/mapbox/streets-v12";
-    if (data.settings.mStyle == 2) mStyle = "mapbox://styles/mapbox/light-v11";
-    if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
-    if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
-    mapboxgl.accessToken = mToken;
-    initializeMap();
-  }
-});
-
-/** Initialize Map, then load radar+alerts, preload frames, and start animation */
-async function initializeMap() {
-  map = new mapboxgl.Map({
-    container: "map",
-    style: mStyle,
-    center: [mLon, mLat],
-    zoom: mZoom
-  });
-  new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
-  map.on("load", async () => {
-    await fetchRadarData();
-    await fetchNoaaAlerts();
-    preloadAllFrames(radarFrames, () => {
-      console.log("All frames preloaded. Starting animation...");
-      setupBuffers();
-      map.once("idle", () => {
-        fadeLayerIn("radarLayerA", INITIAL_FADE_MS);
-        updateTimeDisplay(currentFrameIndex);
-      });
-      animateRadar();
-    });
-    setInterval(fetchRadarData, 300000); // refresh frames every 5 min
-  });
-}
-
-/** Fetch Radar Data from RainViewer and store frame timestamps */
-async function fetchRadarData() {
-  try {
-    const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
-    const response = await fetch(url);
-    const apiData = await response.json();
-    // Store the URLs and the corresponding timestamps
-    radarFrames = apiData.radar.past.map(frame =>
-      `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
-    );
-    radarFrameTimes = apiData.radar.past.map(frame => frame.time);
-    console.log("Radar frames loaded:", radarFrames.length);
-  } catch (err) {
-    console.error("Error fetching radar data:", err);
-  }
-}
-
-/** Preload all frames using <img> objects */
-function preloadAllFrames(urls, onComplete) {
-  if (!urls.length) {
-    onComplete();
-    return;
-  }
-  framesLoadedCount = 0;
-  urls.forEach((url) => {
-    const img = new Image();
-    img.src = url + `?preload=${Date.now()}`;
-    img.onload = () => {
-      framesLoadedCount++;
-      if (framesLoadedCount === urls.length) onComplete();
+    /* NOAA ALERT COLORS */
+    const ALERT_COLORS = {
+        "Tornado Warning": "red",
+        "Severe Thunderstorm Warning": "orange",
+        "Flash Flood Warning": "darkgreen",
+        "Hurricane Warning": "purple",
+        "Tropical Storm Warning": "blue",
+        "Tornado Watch": "yellow",
+        "Severe Thunderstorm Watch": "yellow",
+        "Hurricane Watch": "plum",
+        "Tropical Storm Watch": "lightblue",
+        "Flood Warning": "darkgreen",
+        "Flood Watch": "lightgreen",
+        "Coastal Flood Warning": "teal",
+        "Coastal Flood Watch": "lightseagreen",
+        "Winter Storm Warning": "pink",
+        "Winter Storm Watch": "lightpink",
+        "Blizzard Warning": "white",
+        "Wind Chill Warning": "lightblue",
+        "High Wind Warning": "brown",
+        "Wind Advisory": "tan",
+        "Heat Advisory": "orange",
+        "Excessive Heat Warning": "darkorange",
+        "Fire Weather Warning": "red",
+        "Special Marine Warning": "blue",
+        "Air Quality Alert": "gray",
+        "Special Weather Statement": "lightgray",
+        "default": "gray"
     };
-    img.onerror = () => {
-      framesLoadedCount++;
-      if (framesLoadedCount === urls.length) onComplete();
-    };
-  });
-}
 
-/** Setup buffers A and B at 0 opacity */
-function setupBuffers() {
-  if (radarFrames.length) {
-    createRadarLayer("radarSourceA", "radarLayerA", radarFrames[0], 0);
-  }
-  createRadarLayer("radarSourceB", "radarLayerB",
-    radarFrames.length ? radarFrames[0] : "", 0);
-  updateProgressBar(0);
-}
+    /* ANIMATION VARIABLES */
+    const ANIMATION_INTERVAL_MS = 1500; // time between frames
+    const FADE_DURATION_MS = 150;         // crossfade duration
+    const INITIAL_FADE_MS = 600;          // initial fade-in time
 
-/** Helper: Create a raster source+layer with given initial opacity */
-function createRadarLayer(sourceId, layerId, tileUrl, initOpacity) {
-  if (map.getLayer(layerId)) map.removeLayer(layerId);
-  if (map.getSource(sourceId)) map.removeSource(sourceId);
-  if (!tileUrl) return;
-  map.addSource(sourceId, {
-    type: 'raster',
-    tiles: [ tileUrl ],
-    tileSize: 256,
-    minzoom: 0,
-    maxzoom: 12
-  });
-  map.addLayer({
-    id: layerId,
-    type: 'raster',
-    source: sourceId,
-    paint: { 'raster-opacity': initOpacity }
-  });
-}
+    /* MAP + RADAR SETUP VARIABLES */
+    let mLat = 35;
+    let mLon = -83;
+    let mZoom = 5;
+    let radarFrames = [];
+    let radarFrameTimes = []; // store timestamps for each frame
+    let currentFrameIndex = 0;
+    let mToken;
+    let wStyle = 1;
+    let mStyle = "mapbox://styles/mapbox/dark-v11";
+    let stateAlerts = "NC,SC,GA,TN";
+    let map;
 
-/** Fade a layer from 0 -> 1 */
-function fadeLayerIn(layerId, durationMs) {
-  const startTime = performance.now();
-  function step(now) {
-    const elapsed = now - startTime;
-    const fraction = Math.min(elapsed / durationMs, 1);
-    if (map.getLayer(layerId)) {
-      map.setPaintProperty(layerId, 'raster-opacity', fraction);
-    }
-    if (fraction < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
+    // Global toggle variables
+    let showCounties = true; // display counties by default
+    let showAlerts = true;   // display alerts by default
+    let alertLayerIds = [];  // to track alert layers for removal
 
-/** Main animation loop using double-buffer crossfade */
-function animateRadar() {
-  if (radarFrames.length < 2) return;
-  setInterval(() => {
-    const playPauseEl = document.getElementById('playPauseBtn');
-    isPlaying = !playPauseEl.classList.contains('paused');
-    if (!isPlaying) return;
-    if (pauseActive) {
-      if (Date.now() - pauseStartTime >= END_OF_LOOP_PAUSE_MS) {
-        pauseActive = false;
-      } else {
-        return;
+    // Global object to filter alert types (all keys from ALERT_COLORS except "default")
+    const alertTypeFilters = {};
+    Object.keys(ALERT_COLORS).forEach(key => {
+      if (key !== "default") {
+        alertTypeFilters[key] = true;
       }
-    }
-    crossfadeNextFrame();
-    updateProgressBar(currentFrameIndex);
-    updateTimeDisplay(currentFrameIndex);
-    if (currentFrameIndex === radarFrames.length - 1) {
-      pauseActive = true;
-      pauseStartTime = Date.now();
-    }
-    currentFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-  }, ANIMATION_INTERVAL_MS);
-}
+    });
 
-/** Crossfade to the next frame using buffers A/B */
-function crossfadeNextFrame() {
-  const oldBuf = activeBuffer;
-  const newBuf = (oldBuf === "A") ? "B" : "A";
-  const oldLayerId = "radarLayer" + oldBuf;
-  const newLayerId = "radarLayer" + newBuf;
-  const newSourceId = "radarSource" + newBuf;
-  const frameUrl = radarFrames[currentFrameIndex];
-  console.log(`Frame ${currentFrameIndex} => buffer ${newBuf}`, frameUrl);
-  createRadarLayer(newSourceId, newLayerId, frameUrl, 0);
-  map.once("idle", () => {
-    fadeLayers(oldLayerId, newLayerId, FADE_DURATION_MS);
-  });
-  activeBuffer = newBuf;
-}
+    let isPlaying = true;   // determined by whether #playPauseBtn has "paused"
+    let activeBuffer = "A"; // double-buffer: "A" or "B"
 
-/** Fade out the old layer while fading in the new layer */
-function fadeLayers(layerOut, layerIn, durationMs) {
-  const startTime = performance.now();
-  function step(now) {
-    const elapsed = now - startTime;
-    const fraction = Math.min(elapsed / durationMs, 1);
-    if (map.getLayer(layerOut)) {
-      map.setPaintProperty(layerOut, 'raster-opacity', 1 - fraction);
-    }
-    if (map.getLayer(layerIn)) {
-      map.setPaintProperty(layerIn, 'raster-opacity', fraction);
-    }
-    if (fraction < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
+    // 2-second pause at end of loop
+    const END_OF_LOOP_PAUSE_MS = 2000;
+    let pauseActive = false;
+    let pauseStartTime = 0;
 
-/** Update the progress bar dot */
-function updateProgressBar(frameIndex) {
-  const dot = document.getElementById('progressDot');
-  if (!radarFrames || radarFrames.length < 2) {
-    dot.style.left = '0%';
-    return;
-  }
-  const fraction = frameIndex / (radarFrames.length - 1);
-  dot.style.left = (fraction * 100) + '%';
-}
+    // For preloading frames
+    let framesLoadedCount = 0;
 
-/** Update the time display overlay with the current frame's timestamp */
-function updateTimeDisplay(frameIndex) {
-  if (radarFrameTimes.length > 0) {
-    // Convert UNIX timestamp (seconds) to local Date object
-    let timestamp = radarFrameTimes[frameIndex];
-    let date = new Date(timestamp * 1000);
-    // Format time in 12-hour clock: hour:minute am/pm
-    let options = { hour: 'numeric', minute: 'numeric', hour12: true };
-    let timeString = date.toLocaleTimeString([], options);
-    document.getElementById("timeDisplay").textContent = timeString;
-  }
-}
-
-/** NOAA Alerts (unchanged) */
-async function fetchNoaaAlerts() {
-  const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
-  try {
-    const response = await fetch(alertUrl);
-    const data = await response.json();
-    if (!data.features) {
-      console.log("No NOAA alerts found for:", stateAlerts);
-      return;
-    }
-    console.log("NOAA Alerts found:", data.features.length);
-    for (const feature of data.features) {
-      const eventType = feature.properties.event || "default";
-      const alertColor = ALERT_COLORS[eventType] || ALERT_COLORS["default"];
-      const headline = feature.properties.headline || "N/A";
-      const updatedProps = { ...feature.properties, fillColor: alertColor, myHeadline: headline };
-      const newFeature = { ...feature, properties: updatedProps };
-      if (newFeature.geometry) {
-        addAlertPolygon(newFeature, alertColor);
-      } else {
-        const zones = newFeature.properties.affectedZones || [];
-        for (const zoneUrl of zones) {
-          await fetchZoneGeometry(zoneUrl, newFeature, alertColor);
+    stio.ready((data) => {
+        if (data.settings.mToken) {
+            mToken = data.settings.mToken;
+            if (typeof data.settings.mLat === 'string') mLat = parseFloat(data.settings.mLat);
+            if (typeof data.settings.mLon === 'string') mLon = parseFloat(data.settings.mLon);
+            if (isNaN(mLat) || isNaN(mLon)) {
+                console.error('Error: Invalid lat/lon');
+                return;
+            }
+            mZoom = data.settings.mZoom || mZoom;
+            wStyle = data.settings.wStyle || wStyle;
+            stateAlerts = data.settings.statesAlerts || stateAlerts;
+            if (data.settings.mStyle == 1) mStyle = "mapbox://styles/mapbox/streets-v12";
+            if (data.settings.mStyle == 2) mStyle = "mapbox://styles/mapbox/light-v11";
+            if (data.settings.mStyle == 3) mStyle = "mapbox://styles/mapbox/dark-v11";
+            if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
+            mapboxgl.accessToken = mToken;
+            initializeMap();
+            buildAlertFilters(); // Build the alert type checkboxes dynamically
         }
-      }
+    });
+
+    /** Build the alert filters checkboxes in the side menu **/
+    function buildAlertFilters() {
+        const container = document.getElementById('alertFilters');
+        container.innerHTML = '';
+        Object.keys(alertTypeFilters).forEach(alertType => {
+            // Create a label container.
+            const label = document.createElement('label');
+            label.style.display = 'block';
+            label.style.marginBottom = '8px';
+            label.style.fontSize = '14px';
+            label.style.verticalAlign = 'middle';
+
+            // Create the checkbox.
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = alertTypeFilters[alertType];
+            checkbox.setAttribute('data-type', alertType);
+            checkbox.style.verticalAlign = 'middle';
+            checkbox.addEventListener('change', (e) => {
+                const type = e.target.getAttribute('data-type');
+                alertTypeFilters[type] = e.target.checked;
+                // When filters change, remove all current alert layers and re-fetch alerts.
+                removeAllAlertLayers();
+                if (showAlerts) {
+                    fetchNoaaAlerts();
+                }
+            });
+            label.appendChild(checkbox);
+
+            // Create the colored box (same size as checkbox).
+            const colorBox = document.createElement('span');
+            colorBox.style.width = '16px';
+            colorBox.style.height = '16px';
+            colorBox.style.display = 'inline-block';
+            colorBox.style.backgroundColor = ALERT_COLORS[alertType] || 'transparent';
+            colorBox.style.margin = '0 5px';
+            colorBox.style.verticalAlign = 'middle';
+            label.appendChild(colorBox);
+
+            // Append the text label.
+            const textNode = document.createTextNode(alertType);
+            label.appendChild(textNode);
+
+            container.appendChild(label);
+        });
     }
-  } catch (err) {
-    console.error("Error fetching NOAA alerts:", err);
-  }
-}
 
-function addAlertPolygon(feature, color) {
-  const alertId = feature.id || ("alert-" + Math.random());
-  map.addSource(alertId, {
-    type: "geojson",
-    data: { type: "FeatureCollection", features: [feature] }
-  });
-  map.addLayer({
-    id: alertId,
-    type: "fill",
-    source: alertId,
-    paint: { "fill-color": color, "fill-opacity": 0.3 }
-  });
-  map.addLayer({
-    id: alertId + "-border",
-    type: "line",
-    source: alertId,
-    paint: { "line-color": color, "line-width": 2 }
-  });
-  map.on("click", alertId, (e) => {
-    const props = e.features[0].properties;
-    showAlertPopup(e.lngLat, props);
-  });
-}
-
-async function fetchZoneGeometry(zoneUrl, parentFeature, color) {
-  try {
-    const resp = await fetch(zoneUrl);
-    const data = await resp.json();
-    if (!data.geometry) {
-      console.log("No geometry for zone:", zoneUrl);
-      return;
+    /** Initialize Map, then load radar+alerts, preload frames, and start animation */
+    async function initializeMap() {
+        map = new mapboxgl.Map({
+            container: "map",
+            style: mStyle,
+            center: [mLon, mLat],
+            zoom: mZoom
+        });
+        new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
+        map.on("load", async () => {
+            addStatesLayer();
+            if (showCounties) {
+                addCountiesLayer();
+            }
+            await fetchRadarData();
+            await fetchNoaaAlerts();
+            preloadAllFrames(radarFrames, () => {
+                console.log("All frames preloaded. Starting animation...");
+                // Hide the spinner once preloading is complete
+                document.getElementById("spinner").style.display = "none";
+                setupBuffers();
+                map.once("idle", () => {
+                    fadeLayerIn("radarLayerA", INITIAL_FADE_MS);
+                    updateTimeDisplay(currentFrameIndex);
+                });
+                animateRadar();
+            });
+            setInterval(fetchRadarData, 300000); // refresh frames every 5 min
+        });
     }
-    const zoneFeature = { type: "Feature", geometry: data.geometry, properties: { ...parentFeature.properties } };
-    const zoneId = (parentFeature.id || "alert-") + "-" + data.id;
-    map.addSource(zoneId, {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: [zoneFeature] }
-    });
-    map.addLayer({
-      id: zoneId,
-      type: "fill",
-      source: zoneId,
-      paint: { "fill-color": color, "fill-opacity": 0.3 }
-    });
-    map.addLayer({
-      id: zoneId + "-border",
-      type: "line",
-      source: zoneId,
-      paint: { "line-color": color, "line-width": 2 }
-    });
-    map.on("click", zoneId, (e) => {
-      const props = e.features[0].properties;
-      showAlertPopup(e.lngLat, props);
-    });
-  } catch (err) {
-    console.error("Error fetching zone geometry for", zoneUrl, err);
-  }
-}
 
-function showAlertPopup(lngLat, props) {
-  const headline = props.myHeadline || "N/A";
-  const descriptionFull = props.description || "No further details provided.";
-  const popupContent = document.createElement('div');
-  popupContent.innerHTML = `<strong>${headline}</strong>`;
-  const divider = document.createElement('hr');
-  divider.className = 'popup-divider';
-  divider.style.display = 'none';
-  popupContent.appendChild(divider);
-  const descDiv = document.createElement('div');
-  descDiv.className = 'popup-description';
-  descDiv.textContent = descriptionFull;
-  popupContent.appendChild(descDiv);
-  const toggleLink = document.createElement('span');
-  toggleLink.className = 'popup-more-link';
-  toggleLink.textContent = 'More';
-  if (descriptionFull.trim() && descriptionFull !== 'No further details provided.') {
-    toggleLink.addEventListener('click', () => {
-      if (descDiv.style.display === 'none') {
-        descDiv.style.display = 'block';
-        divider.style.display = 'block';
-        toggleLink.textContent = 'Less';
-      } else {
-        descDiv.style.display = 'none';
+    /** Fetch Radar Data from RainViewer and store frame timestamps */
+    async function fetchRadarData() {
+        try {
+            const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
+            const response = await fetch(url);
+            const apiData = await response.json();
+            radarFrames = apiData.radar.past.map(frame =>
+                `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
+            );
+            radarFrameTimes = apiData.radar.past.map(frame => frame.time);
+            console.log("Radar frames loaded:", radarFrames.length);
+        } catch (err) {
+            console.error("Error fetching radar data:", err);
+        }
+    }
+
+    /** Preload all frames using <img> objects */
+    function preloadAllFrames(urls, onComplete) {
+        if (!urls.length) {
+            onComplete();
+            return;
+        }
+        framesLoadedCount = 0;
+        urls.forEach((url) => {
+            const img = new Image();
+            img.src = url + `?preload=${Date.now()}`;
+            img.onload = () => {
+                framesLoadedCount++;
+                if (framesLoadedCount === urls.length) onComplete();
+            };
+            img.onerror = () => {
+                framesLoadedCount++;
+                if (framesLoadedCount === urls.length) onComplete();
+            };
+        });
+    }
+
+    /** Setup buffers A and B at 0 opacity */
+    function setupBuffers() {
+        if (radarFrames.length) {
+            createRadarLayer("radarSourceA", "radarLayerA", radarFrames[0], 0);
+        }
+        createRadarLayer("radarSourceB", "radarLayerB",
+            radarFrames.length ? radarFrames[0] : "", 0);
+        updateProgressBar(0);
+    }
+
+    /** Create a raster source+layer with initial opacity */
+    function createRadarLayer(sourceId, layerId, tileUrl, initOpacity) {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        if (!tileUrl) return;
+        map.addSource(sourceId, {
+            type: 'raster',
+            tiles: [tileUrl],
+            tileSize: 256,
+            minzoom: 0,
+            maxzoom: 12
+        });
+        map.addLayer({
+            id: layerId,
+            type: 'raster',
+            source: sourceId,
+            paint: { 'raster-opacity': initOpacity }
+        });
+    }
+
+    /** Fade a layer from 0 -> 1 */
+    function fadeLayerIn(layerId, durationMs) {
+        const startTime = performance.now();
+        function step(now) {
+            const elapsed = now - startTime;
+            const fraction = Math.min(elapsed / durationMs, 1);
+            if (map.getLayer(layerId)) {
+                map.setPaintProperty(layerId, 'raster-opacity', fraction);
+            }
+            if (fraction < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    /** Main animation loop using double-buffer crossfade */
+    function animateRadar() {
+        if (radarFrames.length < 2) return;
+        setInterval(() => {
+            const playPauseEl = document.getElementById('playPauseBtn');
+            isPlaying = !playPauseEl.classList.contains('paused');
+            if (!isPlaying) return;
+            if (pauseActive) {
+                if (Date.now() - pauseStartTime >= END_OF_LOOP_PAUSE_MS) {
+                    pauseActive = false;
+                } else {
+                    return;
+                }
+            }
+            crossfadeNextFrame();
+            updateProgressBar(currentFrameIndex);
+            updateTimeDisplay(currentFrameIndex);
+            if (currentFrameIndex === radarFrames.length - 1) {
+                pauseActive = true;
+                pauseStartTime = Date.now();
+            }
+            currentFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+        }, ANIMATION_INTERVAL_MS);
+    }
+
+    /** Crossfade to the next frame using buffers A/B */
+    function crossfadeNextFrame() {
+        const oldBuf = activeBuffer;
+        const newBuf = (oldBuf === "A") ? "B" : "A";
+        const oldLayerId = "radarLayer" + oldBuf;
+        const newLayerId = "radarLayer" + newBuf;
+        const newSourceId = "radarSource" + newBuf;
+        const frameUrl = radarFrames[currentFrameIndex];
+        console.log(`Frame ${currentFrameIndex} => buffer ${newBuf}`, frameUrl);
+        createRadarLayer(newSourceId, newLayerId, frameUrl, 0);
+        map.once("idle", () => {
+            fadeLayers(oldLayerId, newLayerId, FADE_DURATION_MS);
+        });
+        activeBuffer = newBuf;
+    }
+
+    /** Fade out the old layer while fading in the new layer */
+    function fadeLayers(layerOut, layerIn, durationMs) {
+        const startTime = performance.now();
+        function step(now) {
+            const elapsed = now - startTime;
+            const fraction = Math.min(elapsed / durationMs, 1);
+            if (map.getLayer(layerOut)) {
+                map.setPaintProperty(layerOut, 'raster-opacity', 1 - fraction);
+            }
+            if (map.getLayer(layerIn)) {
+                map.setPaintProperty(layerIn, 'raster-opacity', fraction);
+            }
+            if (fraction < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    /** Update the progress bar dot */
+    function updateProgressBar(frameIndex) {
+        const progressBar = document.getElementById('animationProgress');
+        const dot = document.getElementById('progressDot');
+        if (!radarFrames || radarFrames.length < 2) {
+            dot.style.left = '0px';
+            return;
+        }
+        const available = progressBar.clientWidth - dot.clientWidth;
+        const fraction = frameIndex / (radarFrames.length - 1);
+        dot.style.left = (fraction * available) + "px";
+    }
+
+    /** Update the time display overlay with the current frame's timestamp */
+    function updateTimeDisplay(frameIndex) {
+        if (radarFrameTimes.length > 0) {
+            let timestamp = radarFrameTimes[frameIndex];
+            let date = new Date(timestamp * 1000);
+            let options = { hour: 'numeric', minute: 'numeric', hour12: true };
+            let timeString = date.toLocaleTimeString([], options);
+            document.getElementById("timeDisplay").textContent = timeString;
+        }
+    }
+
+    /** NOAA Alerts */
+    async function fetchNoaaAlerts() {
+        if (!showAlerts) return;
+        const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
+        try {
+            const response = await fetch(alertUrl);
+            const data = await response.json();
+            if (!data.features) {
+                console.log("No NOAA alerts found for:", stateAlerts);
+                return;
+            }
+            console.log("NOAA Alerts found:", data.features.length);
+            for (const feature of data.features) {
+                const eventType = feature.properties.event || "default";
+                // Only process alert if its type is enabled.
+                if (!alertTypeFilters[eventType]) continue;
+                const alertColor = ALERT_COLORS[eventType] || ALERT_COLORS["default"];
+                const headline = feature.properties.headline || "N/A";
+                const updatedProps = { ...feature.properties, fillColor: alertColor, myHeadline: headline };
+                const newFeature = { ...feature, properties: updatedProps };
+                if (newFeature.geometry) {
+                    addAlertPolygon(newFeature, alertColor);
+                } else {
+                    const zones = newFeature.properties.affectedZones || [];
+                    for (const zoneUrl of zones) {
+                        await fetchZoneGeometry(zoneUrl, newFeature, alertColor);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching NOAA alerts:", err);
+        }
+    }
+
+    // Simplify and add an alert polygon using Turf.js
+    function addAlertPolygon(feature, color) {
+        const simplifiedFeature = turf.simplify(feature, { tolerance: 0.01, highQuality: false });
+        const alertId = simplifiedFeature.id || ("alert-" + Math.random());
+        // Track the alert layer for removal later.
+        alertLayerIds.push(alertId);
+        map.addSource(alertId, {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [simplifiedFeature] }
+        });
+        map.addLayer({
+            id: alertId,
+            type: "fill",
+            source: alertId,
+            paint: { "fill-color": color, "fill-opacity": 0.3 }
+        });
+        map.addLayer({
+            id: alertId + "-border",
+            type: "line",
+            source: alertId,
+            paint: { "line-color": color, "line-width": 2 }
+        });
+        map.on("click", alertId, (e) => {
+            const props = e.features[0].properties;
+            showAlertPopup(e.lngLat, props);
+        });
+    }
+
+    // Fetch and simplify zone geometries with Turf.js before adding them
+    async function fetchZoneGeometry(zoneUrl, parentFeature, color) {
+        try {
+            const resp = await fetch(zoneUrl);
+            const data = await resp.json();
+            if (!data.geometry) {
+                console.log("No geometry for zone:", zoneUrl);
+                return;
+            }
+            let zoneFeature = {
+                type: "Feature",
+                geometry: data.geometry,
+                properties: { ...parentFeature.properties }
+            };
+            zoneFeature = turf.simplify(zoneFeature, { tolerance: 0.01, highQuality: false });
+            const zoneId = (parentFeature.id || "alert-") + "-" + data.id;
+            // Track this zone so it can be removed with alerts.
+            alertLayerIds.push(zoneId);
+            map.addSource(zoneId, {
+                type: "geojson",
+                data: { type: "FeatureCollection", features: [zoneFeature] }
+            });
+            map.addLayer({
+                id: zoneId,
+                type: "fill",
+                source: zoneId,
+                paint: { "fill-color": color, "fill-opacity": 0.3 }
+            });
+            map.addLayer({
+                id: zoneId + "-border",
+                type: "line",
+                source: zoneId,
+                paint: { "line-color": color, "line-width": 2 }
+            });
+            map.on("click", zoneId, (e) => {
+                const props = e.features[0].properties;
+                showAlertPopup(e.lngLat, props);
+            });
+        } catch (err) {
+            console.error("Error fetching zone geometry for", zoneUrl, err);
+        }
+    }
+
+    function showAlertPopup(lngLat, props) {
+        const headline = props.myHeadline || "N/A";
+        const descriptionFull = props.description || "No further details provided.";
+        const popupContent = document.createElement('div');
+        popupContent.innerHTML = `<strong>${headline}</strong>`;
+        const divider = document.createElement('hr');
+        divider.className = 'popup-divider';
         divider.style.display = 'none';
+        popupContent.appendChild(divider);
+        const descDiv = document.createElement('div');
+        descDiv.className = 'popup-description';
+        descDiv.textContent = descriptionFull;
+        popupContent.appendChild(descDiv);
+        const toggleLink = document.createElement('span');
+        toggleLink.className = 'popup-more-link';
         toggleLink.textContent = 'More';
-      }
-    });
-  } else {
-    toggleLink.style.display = 'none';
-  }
-  popupContent.appendChild(toggleLink);
-  new mapboxgl.Popup().setLngLat(lngLat).setDOMContent(popupContent).addTo(map);
-}
+        if (descriptionFull.trim() && descriptionFull !== 'No further details provided.') {
+            toggleLink.addEventListener('click', () => {
+                if (descDiv.style.display === 'none') {
+                    descDiv.style.display = 'block';
+                    divider.style.display = 'block';
+                    toggleLink.textContent = 'Less';
+                } else {
+                    descDiv.style.display = 'none';
+                    divider.style.display = 'none';
+                    toggleLink.textContent = 'More';
+                }
+            });
+        } else {
+            toggleLink.style.display = 'none';
+        }
+        popupContent.appendChild(toggleLink);
+        new mapboxgl.Popup().setLngLat(lngLat).setDOMContent(popupContent).addTo(map);
+    }
 
-/** LEGEND */
-function buildLegend() {
-  const legendPopup = document.getElementById('legendPopup');
-  legendPopup.innerHTML = '';
-  for (const [eventType, color] of Object.entries(ALERT_COLORS)) {
-    if (eventType === 'default') continue;
-    const itemDiv = document.createElement('div');
-    itemDiv.className = 'legend-item';
-    const colorBox = document.createElement('div');
-    colorBox.className = 'legend-color';
-    colorBox.style.backgroundColor = color;
-    const label = document.createElement('span');
-    label.textContent = eventType;
-    itemDiv.appendChild(colorBox);
-    itemDiv.appendChild(label);
-    legendPopup.appendChild(itemDiv);
-  }
-}
-document.getElementById('legendButton').addEventListener('click', () => {
-  const legendPopup = document.getElementById('legendPopup');
-  if (!legendPopup.hasChildNodes()) {
-    buildLegend();
-  }
-  legendPopup.style.display = (legendPopup.style.display === 'none' || !legendPopup.style.display)
-    ? 'block'
-    : 'none';
-});
+    /* === NEW: Side Menu Functionality === */
+    // Toggle side menu open/close when clicking the menu button
+    document.getElementById('menuButton').addEventListener('click', () => {
+        document.getElementById('sideMenu').classList.toggle('open');
+    });
+    // Counties checkbox toggles showCounties
+    document.getElementById('menuCounties').addEventListener('change', (e) => {
+        showCounties = e.target.checked;
+        if (showCounties) {
+            //addStatesLayer();
+            addCountiesLayer();
+        } else {
+            if (map.getLayer("counties-layer")) map.removeLayer("counties-layer");
+            if (map.getSource("counties")) map.removeSource("counties");
+            //if (map.getLayer("states-layer")) map.removeLayer("states-layer");
+            //if (map.getSource("states")) map.removeSource("states");
+        }
+    });
+    // (The master "Alerts" checkbox has been removed in favor of per–alert type filters.)
+
+    // Function to remove all alert layers tracked in alertLayerIds
+    function removeAllAlertLayers() {
+        alertLayerIds.forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+            if (map.getLayer(id + "-border")) map.removeLayer(id + "-border");
+            if (map.getSource(id)) map.removeSource(id);
+        });
+        alertLayerIds = [];
+    }
+
+    // Counties (and states) functions remain unchanged
+    function addCountiesLayer() {
+        fetch("https://raw.githubusercontent.com/they-call-me-E/Sharptools/refs/heads/main/CustomeTile/RainViewer/counties.json")
+            .then(response => response.json())
+            .then(countiesData => {
+                if (map.getLayer("counties-layer")) map.removeLayer("counties-layer");
+                if (map.getSource("counties")) map.removeSource("counties");
+                map.addSource("counties", {
+                    type: "geojson",
+                    data: countiesData
+                });
+                map.addLayer({
+                    id: "counties-layer",
+                    type: "line",
+                    source: "counties",
+                    layout: {},
+                    paint: {
+                        "line-color": "#aaaaaa",
+                        "line-width": 2,
+                        "line-opacity": 0.125
+                    }
+                });
+            })
+            .catch(err => console.error("Error loading counties GeoJSON:", err));
+    }
+    function addStatesLayer() {
+        fetch("https://raw.githubusercontent.com/they-call-me-E/Sharptools/refs/heads/main/CustomeTile/RainViewer/states.json")
+            .then(response => response.json())
+            .then(statesData => {
+                if (map.getLayer("states-layer")) map.removeLayer("states-layer");
+                if (map.getSource("states")) map.removeSource("states");
+                map.addSource("states", {
+                    type: "geojson",
+                    data: statesData
+                });
+                map.addLayer({
+                    id: "states-layer",
+                    type: "line",
+                    source: "states",
+                    layout: {},
+                    paint: {
+                        "line-color": "#aaaaaa",
+                        "line-width": 2,
+                        "line-opacity": 0.5
+                    }
+                });
+            })
+            .catch(err => console.error("Error loading states GeoJSON:", err));
+    }
 </script>
