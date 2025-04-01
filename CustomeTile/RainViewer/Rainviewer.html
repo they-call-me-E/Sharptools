@@ -30,9 +30,11 @@
     .mapboxgl-ctrl-attrib.mapboxgl-compact {
         display: none !important;
     }
+
     .mapboxgl-ctrl {
         display: none !important;
     }
+
     #map {
         position: absolute;
         top: 0;
@@ -40,6 +42,7 @@
         width: 100%;
         left: 0;
     }
+
     /* Removed legendButton and legendPopup styles */
 
     #animationProgress {
@@ -47,11 +50,12 @@
         left: 80px;
         bottom: 25px;
         height: 6px;
-        width: calc(100% - 170px); /* Adjusts to window width */
+        width: calc(100% - 170px);
         background-color: #ccc;
         border-radius: 3px;
         z-index: 10;
     }
+
     #progressDot {
         position: absolute;
         top: 50%;
@@ -61,34 +65,40 @@
         border-radius: 50%;
         transform: translateY(-50%);
     }
+
     .legend-item {
         display: flex;
         align-items: center;
         margin-bottom: 5px;
     }
+
     .legend-color {
         width: 20px;
         height: 20px;
         margin-right: 5px;
         border: 1px solid #000;
     }
+
     .mapboxgl-popup-content {
         color: black;
         background-color: rgba(0, 0, 0, 0.7);
         border-radius: 6px;
         padding: 8px;
     }
+
     .popup-divider {
         margin: 8px 0;
         border: none;
         border-top: 1px solid #ccc;
     }
+
     .popup-description {
         display: none;
         max-height: 100px;
         overflow-y: auto;
         margin-top: 4px;
     }
+
     .popup-more-link {
         float: right;
         cursor: pointer;
@@ -96,6 +106,7 @@
         text-decoration: underline;
         margin-top: 5px;
     }
+
     /* NEW: Time display overlay style */
     #timeDisplay {
         position: absolute;
@@ -107,6 +118,7 @@
         font-size: 16px;
         z-index: 10;
     }
+
     /* NEW: Spinner overlay style */
     #spinner {
         position: absolute;
@@ -121,10 +133,17 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
+
     @keyframes spin {
-        0% { transform: translate(-50%, -50%) rotate(0deg); }
-        100% { transform: translate(-50%, -50%) rotate(360deg); }
+        0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+        }
+
+        100% {
+            transform: translate(-50%, -50%) rotate(360deg);
+        }
     }
+
     /* FANCY PLAY/PAUSE BUTTON STYLES */
     .play,
     .play::before,
@@ -133,6 +152,7 @@
         height: 100px;
         transition: 0.15s ease;
     }
+
     .play {
         overflow: hidden;
         position: absolute;
@@ -142,9 +162,11 @@
         transform: scale(0.25) translate(-32px, 0px) rotate(120deg) skewY(30deg) scaleX(0.866);
         transition: 0.35s cubic-bezier(0.5, 2, 0.7, 1);
     }
+
     .play:active {
         transform: scale(0.25) translate(-22px, 0px) rotate(120deg) skewY(30deg) scaleX(0.606) scaleY(0.7);
     }
+
     .play::before,
     .play::after {
         content: "";
@@ -152,33 +174,40 @@
         background: white;
         cursor: pointer;
     }
+
     .play::before {
         border-radius: 25px 25px 25px 50px;
         transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg) translate(-24px, -42px) skewX(30deg) scaleY(0.8666);
     }
+
     .play::after {
         border-radius: 25px 25px 50px 25px;
         transform: scaleX(1.1555) skewY(-30deg) rotate(-30deg) translate(24px, -42px) skewX(-30deg) scaleY(0.8666);
     }
+
     .play.paused {
         transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scaleX(1);
         cursor: pointer;
     }
+
     .play.paused:active {
         transform: scale(0.25) translate(-7px, 0px) rotate(90deg) skewY(0deg) scale(0.7);
     }
+
     .play.paused::before {
         height: 85px;
         width: 30px;
         transform: scale(1) skewY(0deg) rotate(-90deg) translate(21px, 35px) skewX(0deg);
         border-radius: 10px;
     }
+
     .play.paused::after {
         height: 85px;
         width: 30px;
         transform: scale(1) skewY(0deg) rotate(-90deg) translate(-21px, 35px) skewX(0deg);
         border-radius: 10px;
     }
+
     /* === NEW: Slide-in Menu Styles === */
     #menuButton {
         position: fixed;
@@ -190,48 +219,59 @@
         cursor: pointer;
         padding: 0px;
         border-radius: 3px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
+
     #menuButton svg {
         width: 24px;
         height: 24px;
         fill: black;
     }
-   #sideMenu {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 250px;
-    max-height: 100vh;
-    background: white;
-    color: black;
-    box-shadow: -2px 0 5px rgba(0,0,0,0.3);
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    z-index: 50;
-    padding: 20px;
-    padding-bottom: 40px; /* Extra bottom padding for scrolling */
-    overflow-y: auto;
-    box-sizing: border-box; /* Include padding in height */
-}
+
+    #sideMenu {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 250px;
+        max-height: 100vh;
+        background: white;
+        color: black;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 50;
+        padding: 20px;
+        padding-bottom: 40px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
 
     #sideMenu.open {
         transform: translateX(0);
     }
+
     #sideMenu h3 {
         margin-top: 0;
         margin-bottom: 15px;
     }
+
     #sideMenu h4 {
         margin-bottom: 10px;
     }
+
+    /* Added id="alertTitle" so we can hide/show it */
+    #alertTitle {
+        display: block;
+    }
+
     #sideMenu label {
         display: block;
         margin-bottom: 10px;
         font-size: 16px;
     }
+
     #sideMenu button {
-        display: none; /* Removed legend button */
+        display: none;
     }
 </style>
 
@@ -245,26 +285,28 @@
 
 <!-- === NEW: Menu Button and Side Menu Markup === -->
 <button id="menuButton" title="Layers">
-  <!-- Inline Layers SVG Icon -->
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-    <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-10v2h18V7H3z"/>
-  </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-10v2h18V7H3z" />
+    </svg>
 </button>
 <div id="sideMenu">
-  <h3>Menu</h3>
-  <label><input type="checkbox" id="menuCounties" checked> Counties</label>
-  <h4>Alert Types</h4>
-  <div id="alertFilters"></div>
+    <h3>Menu</h3>
+    <label><input type="checkbox" id="menuCounties" checked> Counties</label>
+    <!-- New Alerts toggle -->
+    <label><input type="checkbox" id="menuAlerts" checked> Alerts</label>
+    <!-- Use an id for the heading so it can be hidden -->
+    <h4 id="alertTitle">Alert Types</h4>
+    <div id="alertFilters"></div>
 </div>
 
 <div id="map"></div>
 <!-- Spinner overlay; visible until preloading is complete -->
 <div id="spinner"></div>
 <!-- Fancy play/pause button -->
-<div class="play" id="playPauseBtn" onclick="this.classList.toggle('paused')"></div>
+<div class="play" id="playPauseBtn"></div>
 <!-- Time display overlay -->
 <div id="timeDisplay"></div>
-<!-- Removed legendButton and legendPopup -->
+<!-- Animation progress bar -->
 <div id="animationProgress">
     <div id="progressDot"></div>
 </div>
@@ -299,6 +341,60 @@
         "Special Weather Statement": "lightgray",
         "default": "gray"
     };
+    const stateNameToAbbr = {
+        "Alabama": "AL",
+        "Alaska": "AK",
+        "Arizona": "AZ",
+        "Arkansas": "AR",
+        "California": "CA",
+        "Colorado": "CO",
+        "Connecticut": "CT",
+        "Delaware": "DE",
+        "District of Columbia": "DC",
+        "Florida": "FL",
+        "Georgia": "GA",
+        "Hawaii": "HI",
+        "Idaho": "ID",
+        "Illinois": "IL",
+        "Indiana": "IN",
+        "Iowa": "IA",
+        "Kansas": "KS",
+        "Kentucky": "KY",
+        "Louisiana": "LA",
+        "Maine": "ME",
+        "Maryland": "MD",
+        "Massachusetts": "MA",
+        "Michigan": "MI",
+        "Minnesota": "MN",
+        "Mississippi": "MS",
+        "Missouri": "MO",
+        "Montana": "MT",
+        "Nebraska": "NE",
+        "Nevada": "NV",
+        "New Hampshire": "NH",
+        "New Jersey": "NJ",
+        "New Mexico": "NM",
+        "New York": "NY",
+        "North Carolina": "NC",
+        "North Dakota": "ND",
+        "Ohio": "OH",
+        "Oklahoma": "OK",
+        "Oregon": "OR",
+        "Pennsylvania": "PA",
+        "Rhode Island": "RI",
+        "South Carolina": "SC",
+        "South Dakota": "SD",
+        "Tennessee": "TN",
+        "Texas": "TX",
+        "Utah": "UT",
+        "Vermont": "VT",
+        "Virginia": "VA",
+        "Washington": "WA",
+        "West Virginia": "WV",
+        "Wisconsin": "WI",
+        "Wyoming": "WY",
+        "Puerto Rico": "PR"
+    };
 
     /* ANIMATION VARIABLES */
     const ANIMATION_INTERVAL_MS = 1500; // time between frames
@@ -315,32 +411,29 @@
     let mToken;
     let wStyle = 1;
     let mStyle = "mapbox://styles/mapbox/dark-v11";
-    let stateAlerts = "NC,SC,GA,TN";
+    let stateAlerts = "NC";
     let map;
 
     // Global toggle variables
-    let showCounties = true; // display counties by default
-    let showAlerts = true;   // display alerts by default
-    let alertLayerIds = [];  // to track alert layers for removal
+    let showCounties = true;
+    let showAlerts = true; // default is true so alerts are visible initially
+    let alertLayerIds = [];
 
     // Global object to filter alert types (all keys from ALERT_COLORS except "default")
     const alertTypeFilters = {};
     Object.keys(ALERT_COLORS).forEach(key => {
-      if (key !== "default") {
-        alertTypeFilters[key] = true;
-      }
+        if (key !== "default") { alertTypeFilters[key] = true; }
     });
 
-    let isPlaying = true;   // determined by whether #playPauseBtn has "paused"
-    let activeBuffer = "A"; // double-buffer: "A" or "B"
+    let isPlaying = false;
+    let activeBuffer = "A";
+    let autoPlay = false; // Prevent auto play by default
 
-    // 2-second pause at end of loop
     const END_OF_LOOP_PAUSE_MS = 2000;
     let pauseActive = false;
     let pauseStartTime = 0;
-
-    // For preloading frames
     let framesLoadedCount = 0;
+    let animationInterval; // to store the setInterval ID
 
     stio.ready((data) => {
         if (data.settings.mToken) {
@@ -360,23 +453,20 @@
             if (data.settings.mStyle == 4) mStyle = "mapbox://styles/mapbox/satellite-v9";
             mapboxgl.accessToken = mToken;
             initializeMap();
-            buildAlertFilters(); // Build the alert type checkboxes dynamically
+            buildAlertFilters();
         }
     });
 
-    /** Build the alert filters checkboxes in the side menu **/
+    /** Build alert filters checkboxes **/
     function buildAlertFilters() {
         const container = document.getElementById('alertFilters');
         container.innerHTML = '';
         Object.keys(alertTypeFilters).forEach(alertType => {
-            // Create a label container.
             const label = document.createElement('label');
             label.style.display = 'block';
             label.style.marginBottom = '8px';
             label.style.fontSize = '14px';
             label.style.verticalAlign = 'middle';
-
-            // Create the checkbox.
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.checked = alertTypeFilters[alertType];
@@ -385,15 +475,10 @@
             checkbox.addEventListener('change', (e) => {
                 const type = e.target.getAttribute('data-type');
                 alertTypeFilters[type] = e.target.checked;
-                // When filters change, remove all current alert layers and re-fetch alerts.
                 removeAllAlertLayers();
-                if (showAlerts) {
-                    fetchNoaaAlerts();
-                }
+                if (showAlerts) { fetchNoaaAlerts(); }
             });
             label.appendChild(checkbox);
-
-            // Create the colored box (same size as checkbox).
             const colorBox = document.createElement('span');
             colorBox.style.width = '16px';
             colorBox.style.height = '16px';
@@ -402,16 +487,12 @@
             colorBox.style.margin = '0 5px';
             colorBox.style.verticalAlign = 'middle';
             label.appendChild(colorBox);
-
-            // Append the text label.
-            const textNode = document.createTextNode(alertType);
-            label.appendChild(textNode);
-
+            label.appendChild(document.createTextNode(alertType));
             container.appendChild(label);
         });
     }
 
-    /** Initialize Map, then load radar+alerts, preload frames, and start animation */
+    /** Initialize Map, load data, preload frames **/
     async function initializeMap() {
         map = new mapboxgl.Map({
             container: "map",
@@ -420,29 +501,78 @@
             zoom: mZoom
         });
         new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
+
+        map.on('moveend', () => {
+            console.log('Moving map');
+            //const visibleStates = getVisibleStateAbbreviations();
+            //console.log('Visible States:', visibleStates);
+            const closestAbbrs = getClosestStateAbbreviations(3); // Change 3 to 1-4 as desired.
+            console.log("Closest state abbreviations:", closestAbbrs.join(', '));
+            // Update the global stateAlerts variable with the closest states
+            stateAlerts = closestAbbrs.join(',');
+
+            // Optionally remove previously drawn alerts (currently commented out)
+            // removeAllAlertLayers();
+
+            // Fetch new alerts based on the updated stateAlerts
+            fetchNoaaAlerts();
+        });
+
         map.on("load", async () => {
             addStatesLayer();
-            if (showCounties) {
-                addCountiesLayer();
-            }
+            if (showCounties) { addCountiesLayer(); }
+
             await fetchRadarData();
             await fetchNoaaAlerts();
             preloadAllFrames(radarFrames, () => {
-                console.log("All frames preloaded. Starting animation...");
-                // Hide the spinner once preloading is complete
+                console.log("All frames preloaded. Ready to animate.");
                 document.getElementById("spinner").style.display = "none";
                 setupBuffers();
                 map.once("idle", () => {
                     fadeLayerIn("radarLayerA", INITIAL_FADE_MS);
                     updateTimeDisplay(currentFrameIndex);
+                    const closestAbbrs = getClosestStateAbbreviations(3); // Change 3 to 1-4 as desired.
+                    console.log("Closest state abbreviations:", closestAbbrs.join(', '));
                 });
-                animateRadar();
+                if (autoPlay) { animateRadar(); }
             });
-            setInterval(fetchRadarData, 300000); // refresh frames every 5 min
+            setInterval(fetchRadarData, 300000);
         });
     }
 
-    /** Fetch Radar Data from RainViewer and store frame timestamps */
+    // Play/Pause button event listener
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    playPauseBtn.addEventListener('click', () => {
+        if (playPauseBtn.classList.contains('paused')) {
+            playPauseBtn.classList.remove('paused');
+            autoPlay = true;
+            if (!animationInterval) { animateRadar(); }
+        } else {
+            playPauseBtn.classList.add('paused');
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+        }
+    });
+
+    // Alerts toggle event listener
+    document.getElementById('menuAlerts').addEventListener('change', (e) => {
+        showAlerts = e.target.checked;
+        const alertTitle = document.getElementById('alertTitle');
+        const alertFilters = document.getElementById('alertFilters');
+        if (showAlerts) {
+            alertTitle.style.display = 'block';
+            alertFilters.style.display = 'block';
+            fetchNoaaAlerts();
+        } else {
+            alertTitle.style.display = 'none';
+            alertFilters.style.display = 'none';
+            removeAllAlertLayers();
+        }
+    });
+
+    /** Fetch Radar Data from RainViewer **/
     async function fetchRadarData() {
         try {
             const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
@@ -458,28 +588,25 @@
         }
     }
 
-    /** Preload all frames using <img> objects */
+    /** Preload all frames using <img> objects **/
     function preloadAllFrames(urls, onComplete) {
-        if (!urls.length) {
-            onComplete();
-            return;
-        }
+        if (!urls.length) { onComplete(); return; }
         framesLoadedCount = 0;
         urls.forEach((url) => {
             const img = new Image();
             img.src = url + `?preload=${Date.now()}`;
             img.onload = () => {
                 framesLoadedCount++;
-                if (framesLoadedCount === urls.length) onComplete();
+                if (framesLoadedCount === urls.length) { onComplete(); }
             };
             img.onerror = () => {
                 framesLoadedCount++;
-                if (framesLoadedCount === urls.length) onComplete();
+                if (framesLoadedCount === urls.length) { onComplete(); }
             };
         });
     }
 
-    /** Setup buffers A and B at 0 opacity */
+    /** Setup buffers A and B at 0 opacity **/
     function setupBuffers() {
         if (radarFrames.length) {
             createRadarLayer("radarSourceA", "radarLayerA", radarFrames[0], 0);
@@ -489,10 +616,10 @@
         updateProgressBar(0);
     }
 
-    /** Create a raster source+layer with initial opacity */
+    /** Create a raster source and layer **/
     function createRadarLayer(sourceId, layerId, tileUrl, initOpacity) {
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        if (map.getLayer(layerId)) { map.removeLayer(layerId); }
+        if (map.getSource(sourceId)) { map.removeSource(sourceId); }
         if (!tileUrl) return;
         map.addSource(sourceId, {
             type: 'raster',
@@ -509,7 +636,7 @@
         });
     }
 
-    /** Fade a layer from 0 -> 1 */
+    /** Fade a layer from 0 to 1 opacity **/
     function fadeLayerIn(layerId, durationMs) {
         const startTime = performance.now();
         function step(now) {
@@ -523,10 +650,10 @@
         requestAnimationFrame(step);
     }
 
-    /** Main animation loop using double-buffer crossfade */
+    /** Main animation loop using double-buffer crossfade **/
     function animateRadar() {
         if (radarFrames.length < 2) return;
-        setInterval(() => {
+        animationInterval = setInterval(() => {
             const playPauseEl = document.getElementById('playPauseBtn');
             isPlaying = !playPauseEl.classList.contains('paused');
             if (!isPlaying) return;
@@ -548,7 +675,7 @@
         }, ANIMATION_INTERVAL_MS);
     }
 
-    /** Crossfade to the next frame using buffers A/B */
+    /** Crossfade to the next frame using buffers A and B **/
     function crossfadeNextFrame() {
         const oldBuf = activeBuffer;
         const newBuf = (oldBuf === "A") ? "B" : "A";
@@ -564,7 +691,7 @@
         activeBuffer = newBuf;
     }
 
-    /** Fade out the old layer while fading in the new layer */
+    /** Fade out the old layer while fading in the new layer **/
     function fadeLayers(layerOut, layerIn, durationMs) {
         const startTime = performance.now();
         function step(now) {
@@ -581,7 +708,7 @@
         requestAnimationFrame(step);
     }
 
-    /** Update the progress bar dot */
+    /** Update the progress bar dot **/
     function updateProgressBar(frameIndex) {
         const progressBar = document.getElementById('animationProgress');
         const dot = document.getElementById('progressDot');
@@ -594,7 +721,7 @@
         dot.style.left = (fraction * available) + "px";
     }
 
-    /** Update the time display overlay with the current frame's timestamp */
+    /** Update the time display overlay with the current frame's timestamp **/
     function updateTimeDisplay(frameIndex) {
         if (radarFrameTimes.length > 0) {
             let timestamp = radarFrameTimes[frameIndex];
@@ -605,7 +732,7 @@
         }
     }
 
-    /** NOAA Alerts */
+    /** NOAA Alerts functions **/
     async function fetchNoaaAlerts() {
         if (!showAlerts) return;
         const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
@@ -619,7 +746,6 @@
             console.log("NOAA Alerts found:", data.features.length);
             for (const feature of data.features) {
                 const eventType = feature.properties.event || "default";
-                // Only process alert if its type is enabled.
                 if (!alertTypeFilters[eventType]) continue;
                 const alertColor = ALERT_COLORS[eventType] || ALERT_COLORS["default"];
                 const headline = feature.properties.headline || "N/A";
@@ -639,11 +765,9 @@
         }
     }
 
-    // Simplify and add an alert polygon using Turf.js
     function addAlertPolygon(feature, color) {
         const simplifiedFeature = turf.simplify(feature, { tolerance: 0.01, highQuality: false });
         const alertId = simplifiedFeature.id || ("alert-" + Math.random());
-        // Track the alert layer for removal later.
         alertLayerIds.push(alertId);
         map.addSource(alertId, {
             type: "geojson",
@@ -667,7 +791,6 @@
         });
     }
 
-    // Fetch and simplify zone geometries with Turf.js before adding them
     async function fetchZoneGeometry(zoneUrl, parentFeature, color) {
         try {
             const resp = await fetch(zoneUrl);
@@ -683,7 +806,6 @@
             };
             zoneFeature = turf.simplify(zoneFeature, { tolerance: 0.01, highQuality: false });
             const zoneId = (parentFeature.id || "alert-") + "-" + data.id;
-            // Track this zone so it can be removed with alerts.
             alertLayerIds.push(zoneId);
             map.addSource(zoneId, {
                 type: "geojson",
@@ -746,26 +868,34 @@
     }
 
     /* === NEW: Side Menu Functionality === */
-    // Toggle side menu open/close when clicking the menu button
     document.getElementById('menuButton').addEventListener('click', () => {
         document.getElementById('sideMenu').classList.toggle('open');
     });
-    // Counties checkbox toggles showCounties
     document.getElementById('menuCounties').addEventListener('change', (e) => {
         showCounties = e.target.checked;
         if (showCounties) {
-            //addStatesLayer();
             addCountiesLayer();
         } else {
             if (map.getLayer("counties-layer")) map.removeLayer("counties-layer");
             if (map.getSource("counties")) map.removeSource("counties");
-            //if (map.getLayer("states-layer")) map.removeLayer("states-layer");
-            //if (map.getSource("states")) map.removeSource("states");
         }
     });
-    // (The master "Alerts" checkbox has been removed in favor of per–alert type filters.)
+    // NEW: Alerts toggle event
+    document.getElementById('menuAlerts').addEventListener('change', (e) => {
+        showAlerts = e.target.checked;
+        const alertTitle = document.getElementById('alertTitle');
+        const alertFilters = document.getElementById('alertFilters');
+        if (showAlerts) {
+            alertTitle.style.display = 'block';
+            alertFilters.style.display = 'block';
+            fetchNoaaAlerts();
+        } else {
+            alertTitle.style.display = 'none';
+            alertFilters.style.display = 'none';
+            removeAllAlertLayers();
+        }
+    });
 
-    // Function to remove all alert layers tracked in alertLayerIds
     function removeAllAlertLayers() {
         alertLayerIds.forEach(id => {
             if (map.getLayer(id)) map.removeLayer(id);
@@ -775,17 +905,13 @@
         alertLayerIds = [];
     }
 
-    // Counties (and states) functions remain unchanged
     function addCountiesLayer() {
         fetch("https://raw.githubusercontent.com/they-call-me-E/Sharptools/refs/heads/main/CustomeTile/RainViewer/counties.json")
             .then(response => response.json())
             .then(countiesData => {
                 if (map.getLayer("counties-layer")) map.removeLayer("counties-layer");
                 if (map.getSource("counties")) map.removeSource("counties");
-                map.addSource("counties", {
-                    type: "geojson",
-                    data: countiesData
-                });
+                map.addSource("counties", { type: "geojson", data: countiesData });
                 map.addLayer({
                     id: "counties-layer",
                     type: "line",
@@ -806,10 +932,7 @@
             .then(statesData => {
                 if (map.getLayer("states-layer")) map.removeLayer("states-layer");
                 if (map.getSource("states")) map.removeSource("states");
-                map.addSource("states", {
-                    type: "geojson",
-                    data: statesData
-                });
+                map.addSource("states", { type: "geojson", data: statesData });
                 map.addLayer({
                     id: "states-layer",
                     type: "line",
@@ -824,4 +947,62 @@
             })
             .catch(err => console.error("Error loading states GeoJSON:", err));
     }
+
+    function getVisibleStateNames() {
+        const features = map.queryRenderedFeatures({ layers: ['states-layer'] });
+        const namesSet = new Set();
+        features.forEach(feature => {
+            if (feature.properties && feature.properties.name) {
+                namesSet.add(feature.properties.name);
+            }
+        });
+        return Array.from(namesSet).join(', ');
+    }
+    function getVisibleStateAbbreviations() {
+        const features = map.queryRenderedFeatures({ layers: ['states-layer'] });
+        const abbrSet = new Set();
+        features.forEach(feature => {
+            if (feature.properties && feature.properties.name) {
+                const abbr = stateNameToAbbr[feature.properties.name] || feature.properties.name;
+                abbrSet.add(abbr);
+            }
+        });
+        return Array.from(abbrSet).join(', ');
+    }
+    function getClosestStateAbbreviations(numStates = 3) {
+        // Limit numStates to a value between 1 and 4.
+        numStates = Math.max(1, Math.min(numStates, 4));
+
+        // Get the current map center as a Turf point.
+        const center = map.getCenter();
+        const centerPoint = turf.point([center.lng, center.lat]);
+
+        // Retrieve all features from the "states-layer"
+        const features = map.queryRenderedFeatures({ layers: ['states-layer'] });
+
+        // Map each feature to an object containing its abbreviation and distance from the center.
+        const featuresWithDistance = features.map(feature => {
+            const name = feature.properties && feature.properties.name;
+            if (!name) return null;
+            // Get abbreviation from mapping.
+            const abbr = stateNameToAbbr[name] || name;
+            const centroid = turf.centroid(feature);
+            const distance = turf.distance(centerPoint, centroid, { units: 'kilometers' });
+            return { abbr, distance };
+        }).filter(item => item !== null);
+
+        // Deduplicate by abbreviation (keeping the one with the smallest distance)
+        const uniqueStates = {};
+        featuresWithDistance.forEach(item => {
+            if (!uniqueStates[item.abbr] || uniqueStates[item.abbr].distance > item.distance) {
+                uniqueStates[item.abbr] = item;
+            }
+        });
+
+        // Sort unique states by distance and take the closest numStates.
+        const sortedStates = Object.values(uniqueStates).sort((a, b) => a.distance - b.distance);
+        return sortedStates.slice(0, numStates).map(item => item.abbr);
+    }
+
+
 </script>
