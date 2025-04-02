@@ -134,6 +134,7 @@
         animation: spin 1s linear infinite;
     }
 
+
     @keyframes spin {
         0% {
             transform: translate(-50%, -50%) rotate(0deg);
@@ -286,14 +287,14 @@
 <!-- === NEW: Menu Button and Side Menu Markup === -->
 <button id="menuButton" title="Layers">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-10v2h18V7H3z" />
+        <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-10v2h18V7H3z"></path>
     </svg>
 </button>
 <div id="sideMenu">
     <h3>Menu</h3>
-    <label><input type="checkbox" id="menuCounties" checked> Counties</label>
+    <label><input type="checkbox" id="menuCounties" checked=""> Counties</label>
     <!-- New Alerts toggle -->
-    <label><input type="checkbox" id="menuAlerts" checked> Alerts</label>
+    <label><input type="checkbox" id="menuAlerts" checked=""> Alerts</label>
     <!-- Use an id for the heading so it can be hidden -->
     <h4 id="alertTitle">Alert Types</h4>
     <div id="alertFilters"></div>
@@ -310,6 +311,9 @@
 <div id="animationProgress">
     <div id="progressDot"></div>
 </div>
+
+
+
 
 <script>
     /* NOAA ALERT COLORS */
@@ -416,7 +420,7 @@
 
     // Global toggle variables
     let showCounties = true;
-    let showAlerts = true; // default is true so alerts are visible initially
+    let showAlerts = false; // default is true so alerts are visible initially
     let alertLayerIds = [];
 
     // Global object to filter alert types (all keys from ALERT_COLORS except "default")
@@ -427,7 +431,7 @@
 
     let isPlaying = false;
     let activeBuffer = "A";
-    let autoPlay = false; // Prevent auto play by default
+    let autoPlay = true; // Prevent auto play by default
 
     const END_OF_LOOP_PAUSE_MS = 2000;
     let pauseActive = false;
@@ -512,7 +516,7 @@
             stateAlerts = closestAbbrs.join(',');
 
             // Optionally remove previously drawn alerts (currently commented out)
-            // removeAllAlertLayers();
+            removeAllAlertLayers();
 
             // Fetch new alerts based on the updated stateAlerts
             fetchNoaaAlerts();
@@ -578,15 +582,29 @@
             const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
             const response = await fetch(url);
             const apiData = await response.json();
-            radarFrames = apiData.radar.past.map(frame =>
+
+            // Map the past frames.
+            const pastFrames = apiData.radar.past.map(frame =>
                 `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
             );
-            radarFrameTimes = apiData.radar.past.map(frame => frame.time);
+            const pastFrameTimes = apiData.radar.past.map(frame => frame.time);
+
+            // Map the nowcast frames.
+            const nowcastFrames = apiData.radar.nowcast.map(frame =>
+                `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
+            );
+            const nowcastFrameTimes = apiData.radar.nowcast.map(frame => frame.time);
+
+            // Combine both arrays.
+            radarFrames = pastFrames.concat(nowcastFrames);
+            radarFrameTimes = pastFrameTimes.concat(nowcastFrameTimes);
+
             console.log("Radar frames loaded:", radarFrames.length);
         } catch (err) {
             console.error("Error fetching radar data:", err);
         }
     }
+
 
     /** Preload all frames using <img> objects **/
     function preloadAllFrames(urls, onComplete) {
@@ -735,6 +753,10 @@
     /** NOAA Alerts functions **/
     async function fetchNoaaAlerts() {
         if (!showAlerts) return;
+
+        // Show the spinner (using the existing #spinner element)
+        document.getElementById('spinner').style.display = 'block';
+
         const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
         try {
             const response = await fetch(alertUrl);
@@ -762,8 +784,13 @@
             }
         } catch (err) {
             console.error("Error fetching NOAA alerts:", err);
+        } finally {
+            // Hide the spinner when alerts processing is complete
+            document.getElementById('spinner').style.display = 'none';
         }
     }
+
+
 
     function addAlertPolygon(feature, color) {
         const simplifiedFeature = turf.simplify(feature, { tolerance: 0.01, highQuality: false });
