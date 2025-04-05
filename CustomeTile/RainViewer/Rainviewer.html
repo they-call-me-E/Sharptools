@@ -41,9 +41,9 @@
         bottom: 0;
         width: 100%;
         left: 0;
+        border-radius: 10px;
+        /* Added border-radius */
     }
-
-    /* Removed legendButton and legendPopup styles */
 
     #animationProgress {
         position: absolute;
@@ -64,19 +64,6 @@
         background-color: grey;
         border-radius: 50%;
         transform: translateY(-50%);
-    }
-
-    .legend-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 5px;
-    }
-
-    .legend-color {
-        width: 20px;
-        height: 20px;
-        margin-right: 5px;
-        border: 1px solid #000;
     }
 
     .mapboxgl-popup-content {
@@ -133,7 +120,6 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
-
 
     @keyframes spin {
         0% {
@@ -238,6 +224,7 @@
         background: white;
         color: black;
         box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
         transform: translateX(100%);
         transition: transform 0.3s ease;
         z-index: 50;
@@ -260,19 +247,142 @@
         margin-bottom: 10px;
     }
 
-    /* Added id="alertTitle" so we can hide/show it */
-    #alertTitle {
-        display: block;
-    }
-
     #sideMenu label {
         display: block;
         margin-bottom: 10px;
         font-size: 16px;
     }
 
-    #sideMenu button {
-        display: none;
+    /* === NEW: Slider Styles for Opacity and Animation Speed === */
+    input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        margin: 10px 0;
+        position: relative;
+        top: -15px;
+    }
+
+    input[type="range"]:focus {
+        outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+        height: 6px;
+        background: #ddd;
+        border: none;
+        border-radius: 3px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        background: #3498db;
+        margin-top: -5px;
+        cursor: pointer;
+    }
+
+    /* Slider labels container */
+    .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #333;
+        position: relative;
+        top: -42px;
+        padding: 0 0px;
+        left: -10px
+    }
+
+    /* Add extra space between the labels by adding margin to the middle label */
+    .slider-labels span:nth-child(2) {
+        margin: 0 69px;
+    }
+
+    /* Tick marks for the Animation Speed slider */
+    #menuSpeed {
+        position: relative;
+        padding-bottom: 20px;
+        top: -15px;
+    }
+
+    #menuSpeed::before {
+        content: "";
+        position: absolute;
+        bottom: 16px;
+        left: 0;
+        right: 0;
+        height: 15px;
+        background-repeat: no-repeat;
+        background-size: 1px 18px;
+        background-image:
+            linear-gradient(to right, black 1px, transparent 1px),
+            linear-gradient(to right, black 1px, transparent 1px),
+            linear-gradient(to right, black 1px, transparent 1px),
+            linear-gradient(to right, black 1px, transparent 1px),
+            linear-gradient(to right, black 1px, transparent 1px);
+        background-position: 0% 0, 25% 0, 50% 0, 75% 0, 100% 0;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    #menuSpeed::-webkit-slider-thumb {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* === NEW: Fly-out Panel for Alert Types === */
+    /* Backdrop overlay (semi-transparent) */
+    /* Backdrop overlay: completely hidden when not open */
+    #alertFlyoutBackdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease;
+        z-index: 99;
+    }
+
+    #alertFlyoutBackdrop.open {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Fly–out panel for Alert Types */
+    #alertFlyoutPanel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 325px;
+        border-radius: 10px;
+        background: #f1f1f1;
+        color: black;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+        transform: translateX(100%);
+        /* Completely off–screen when closed */
+        transition: transform 0.3s ease;
+        z-index: 100;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    #alertFlyoutPanel.open {
+        transform: translateX(0);
+    }
+
+    /* Close button in the fly-out panel */
+    #alertFlyoutPanel .closeBtn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        font-size: 18px;
     }
 </style>
 
@@ -291,13 +401,33 @@
     </svg>
 </button>
 <div id="sideMenu">
-    <h3>Menu</h3>
+    <h3>Map Settings</h3>
     <label><input type="checkbox" id="menuCounties" checked=""> Counties</label>
-    <!-- New Alerts toggle -->
-    <label><input type="checkbox" id="menuAlerts" checked=""> Alerts</label>
-    <!-- Use an id for the heading so it can be hidden -->
-    <h4 id="alertTitle">Alert Types</h4>
-    <div id="alertFilters"></div>
+    <label><input type="checkbox" id="menuArrows" checked=""> Arrows</label>
+    <!-- Alerts checkbox with a fly-out trigger button next to it -->
+    <label>
+        <input type="checkbox" id="menuAlerts" checked=""> Alerts
+        <button id="alertFlyoutBtn" title="..." style="font-size:14px; margin-left:5px;">Alert Types</button>
+    </label>
+    <!-- Radar Opacity Slider -->
+    <label for="menuOpacity">Radar Opacity</label>
+    <input type="range" id="menuOpacity" min="0" max="1" step="0.01" value="1">
+    <!-- Animation Speed Slider -->
+    <label for="menuSpeed">Animation Speed</label>
+    <input type="range" id="menuSpeed" min="1" max="5" step="1" value="3">
+    <div class="slider-labels">
+        <span class="slow">Slow</span>
+        <span class="medium">Medium</span>
+        <span class="fast">Fast</span>
+    </div>
+</div>
+
+<!-- Fly-out panel for Alert Types -->
+<div id="alertFlyoutBackdrop"></div>
+<div id="alertFlyoutPanel">
+    <span class="closeBtn" id="alertFlyoutClose">X</span>
+    <h4>Alert Types</h4>
+    <div id="flyoutAlertFilters"></div>
 </div>
 
 <div id="map"></div>
@@ -311,9 +441,6 @@
 <div id="animationProgress">
     <div id="progressDot"></div>
 </div>
-
-
-
 
 <script>
     /* NOAA ALERT COLORS */
@@ -401,16 +528,16 @@
     };
 
     /* ANIMATION VARIABLES */
-    const ANIMATION_INTERVAL_MS = 1500; // time between frames
-    const FADE_DURATION_MS = 150;         // crossfade duration
-    const INITIAL_FADE_MS = 600;          // initial fade-in time
+    let animationIntervalMS = 1500; // Default mapped to step 3 ("Medium")
+    const FADE_DURATION_MS = 150;
+    const INITIAL_FADE_MS = 600;
 
     /* MAP + RADAR SETUP VARIABLES */
     let mLat = 35;
     let mLon = -83;
     let mZoom = 5;
     let radarFrames = [];
-    let radarFrameTimes = []; // store timestamps for each frame
+    let radarFrameTimes = [];
     let currentFrameIndex = 0;
     let mToken;
     let wStyle = 1;
@@ -418,12 +545,16 @@
     let stateAlerts = "NC";
     let map;
 
-    // Global toggle variables
+    // Global toggles
     let showCounties = true;
-    let showAlerts = false; // default is true so alerts are visible initially
+    let showAlerts = false;
+    let showArrows = true;
     let alertLayerIds = [];
 
-    // Global object to filter alert types (all keys from ALERT_COLORS except "default")
+    document.getElementById('menuAlerts').checked = showAlerts;
+    document.getElementById('menuCounties').checked = showCounties;
+
+    // Global object to filter alert types (excluding "default")
     const alertTypeFilters = {};
     Object.keys(ALERT_COLORS).forEach(key => {
         if (key !== "default") { alertTypeFilters[key] = true; }
@@ -431,13 +562,99 @@
 
     let isPlaying = false;
     let activeBuffer = "A";
-    let autoPlay = true; // Prevent auto play by default
+    let autoPlay = true;
+    let radarOpacity = 1;
+
+    // Radar opacity slider event
+    document.getElementById('menuOpacity').addEventListener('input', (e) => {
+        radarOpacity = parseFloat(e.target.value);
+        if (map) {
+            if (map.getLayer("radarLayerA")) {
+                map.setPaintProperty("radarLayerA", "raster-opacity", radarOpacity);
+            }
+            if (map.getLayer("radarLayerB")) {
+                map.setPaintProperty("radarLayerB", "raster-opacity", radarOpacity);
+            }
+        }
+    });
+
+    // Animation speed slider event
+    document.getElementById('menuSpeed').addEventListener('input', (e) => {
+        const stepValue = parseInt(e.target.value, 10);
+        switch (stepValue) {
+            case 1: animationIntervalMS = 2500; break;
+            case 2: animationIntervalMS = 2000; break;
+            case 3: animationIntervalMS = 1500; break;
+            case 4: animationIntervalMS = 1000; break;
+            case 5: animationIntervalMS = 500; break;
+        }
+        if (animationInterval) {
+            clearInterval(animationInterval);
+            animateRadar();
+        }
+    });
 
     const END_OF_LOOP_PAUSE_MS = 2000;
     let pauseActive = false;
     let pauseStartTime = 0;
     let framesLoadedCount = 0;
-    let animationInterval; // to store the setInterval ID
+    let animationInterval;
+
+    // --- Fly-out Panel Functionality for Alert Types ---
+    document.getElementById('alertFlyoutBtn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        document.getElementById('alertFlyoutBackdrop').classList.add('open');
+        document.getElementById('alertFlyoutPanel').classList.add('open');
+        // Build alert filters into the fly-out panel
+        const flyoutContainer = document.getElementById('flyoutAlertFilters');
+        flyoutContainer.innerHTML = '';
+        Object.keys(alertTypeFilters).forEach(alertType => {
+            const label = document.createElement('label');
+            label.style.display = 'block';
+            label.style.marginBottom = '8px';
+            label.style.fontSize = '14px';
+            label.style.verticalAlign = 'middle';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = alertTypeFilters[alertType];
+            checkbox.setAttribute('data-type', alertType);
+            checkbox.style.verticalAlign = 'middle';
+            checkbox.addEventListener('change', (e) => {
+                const type = e.target.getAttribute('data-type');
+                alertTypeFilters[type] = e.target.checked;
+                removeAllAlertLayers();
+                if (showAlerts) { fetchNoaaAlerts(); }
+            });
+            label.appendChild(checkbox);
+            const colorBox = document.createElement('span');
+            colorBox.style.width = '16px';
+            colorBox.style.height = '16px';
+            colorBox.style.display = 'inline-block';
+            colorBox.style.backgroundColor = ALERT_COLORS[alertType] || 'transparent';
+            colorBox.style.margin = '0 5px';
+            colorBox.style.verticalAlign = 'middle';
+            label.appendChild(colorBox);
+            label.appendChild(document.createTextNode(alertType));
+            flyoutContainer.appendChild(label);
+        });
+    });
+    document.getElementById('alertFlyoutClose').addEventListener('click', function () {
+        document.getElementById('alertFlyoutBackdrop').classList.remove('open');
+        document.getElementById('alertFlyoutPanel').classList.remove('open');
+    });
+    document.getElementById('alertFlyoutBackdrop').addEventListener('click', function () {
+        document.getElementById('alertFlyoutBackdrop').classList.remove('open');
+        document.getElementById('alertFlyoutPanel').classList.remove('open');
+    });
+    document.addEventListener('click', function (e) {
+        const panel = document.getElementById('alertFlyoutPanel');
+        const backdrop = document.getElementById('alertFlyoutBackdrop');
+        if (panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'alertFlyoutBtn') {
+            panel.classList.remove('open');
+            backdrop.classList.remove('open');
+        }
+    });
+    // --- End Fly-out Panel Functionality ---
 
     stio.ready((data) => {
         if (data.settings.mToken) {
@@ -461,7 +678,6 @@
         }
     });
 
-    /** Build alert filters checkboxes **/
     function buildAlertFilters() {
         const container = document.getElementById('alertFilters');
         container.innerHTML = '';
@@ -496,7 +712,6 @@
         });
     }
 
-    /** Initialize Map, load data, preload frames **/
     async function initializeMap() {
         map = new mapboxgl.Map({
             container: "map",
@@ -505,108 +720,118 @@
             zoom: mZoom
         });
         new mapboxgl.Marker().setLngLat([mLon, mLat]).addTo(map);
-
+        map.on('load', () => {
+            const arrowUrl = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/RainViewer/arrow1.png';
+            map.loadImage(arrowUrl, (err, image) => {
+                if (err) {
+                    console.error("Error loading arrow icon:", err);
+                    return;
+                }
+                if (!map.hasImage('arrow-icon')) {
+                    map.addImage('arrow-icon', image);
+                    console.log("Arrow icon loaded successfully.");
+                }
+            });
+        });
+        map.on("styleimagemissing", (e) => {
+            if (e.id === "arrow-icon") {
+                const arrowUrl = 'https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/RainViewer/arrow1.png';
+                map.loadImage(arrowUrl, (err, image) => {
+                    if (err) {
+                        console.error("Error loading arrow icon on styleimagemissing:", err);
+                        return;
+                    }
+                    if (!map.hasImage('arrow-icon')) {
+                        map.addImage('arrow-icon', image);
+                        console.log("Arrow icon loaded via styleimagemissing.");
+                    }
+                });
+            }
+        });
         map.on('moveend', () => {
-            console.log('Moving map');
-            //const visibleStates = getVisibleStateAbbreviations();
-            //console.log('Visible States:', visibleStates);
-            const closestAbbrs = getClosestStateAbbreviations(3); // Change 3 to 1-4 as desired.
-            console.log("Closest state abbreviations:", closestAbbrs.join(', '));
-            // Update the global stateAlerts variable with the closest states
+            const closestAbbrs = getClosestStateAbbreviations(3);
             stateAlerts = closestAbbrs.join(',');
-
-            // Optionally remove previously drawn alerts (currently commented out)
             removeAllAlertLayers();
-
-            // Fetch new alerts based on the updated stateAlerts
             fetchNoaaAlerts();
         });
-
         map.on("load", async () => {
             addStatesLayer();
             if (showCounties) { addCountiesLayer(); }
-
             await fetchRadarData();
             await fetchNoaaAlerts();
             preloadAllFrames(radarFrames, () => {
-                console.log("All frames preloaded. Ready to animate.");
                 document.getElementById("spinner").style.display = "none";
                 setupBuffers();
                 map.once("idle", () => {
                     fadeLayerIn("radarLayerA", INITIAL_FADE_MS);
                     updateTimeDisplay(currentFrameIndex);
-                    const closestAbbrs = getClosestStateAbbreviations(3); // Change 3 to 1-4 as desired.
-                    console.log("Closest state abbreviations:", closestAbbrs.join(', '));
                 });
-                if (autoPlay) { animateRadar(); }
+                if (autoPlay) {
+                    animateRadar(); // Starts animation and sets button to pause symbol
+                } else {
+                    playPauseBtn.classList.add('paused'); // Ensure play symbol if not auto-playing
+                }
             });
             setInterval(fetchRadarData, 300000);
         });
     }
 
-    // Play/Pause button event listener
+    // Set initial state based on autoPlay
     const playPauseBtn = document.getElementById('playPauseBtn');
+    if (autoPlay) {
+        playPauseBtn.classList.add('paused'); // Pause symbol (playing)
+    } else {
+        playPauseBtn.classList.remove('paused'); // Play symbol (paused)
+    }
+
+    // Toggle play/pause on click
     playPauseBtn.addEventListener('click', () => {
         if (playPauseBtn.classList.contains('paused')) {
+            // Switch to paused (show play symbol)
             playPauseBtn.classList.remove('paused');
-            autoPlay = true;
-            if (!animationInterval) { animateRadar(); }
-        } else {
-            playPauseBtn.classList.add('paused');
+            isPlaying = false;
             if (animationInterval) {
                 clearInterval(animationInterval);
                 animationInterval = null;
             }
-        }
-    });
-
-    // Alerts toggle event listener
-    document.getElementById('menuAlerts').addEventListener('change', (e) => {
-        showAlerts = e.target.checked;
-        const alertTitle = document.getElementById('alertTitle');
-        const alertFilters = document.getElementById('alertFilters');
-        if (showAlerts) {
-            alertTitle.style.display = 'block';
-            alertFilters.style.display = 'block';
-            fetchNoaaAlerts();
         } else {
-            alertTitle.style.display = 'none';
-            alertFilters.style.display = 'none';
-            removeAllAlertLayers();
+            // Switch to playing (show pause symbol)
+            playPauseBtn.classList.add('paused');
+            isPlaying = true;
+            if (!animationInterval) {
+                animateRadar();
+            }
         }
     });
 
-    /** Fetch Radar Data from RainViewer **/
+    document.getElementById('menuArrows').addEventListener('change', (e) => {
+        showArrows = e.target.checked;
+        if (map.getLayer("arrowLayer")) {
+            map.setLayoutProperty("arrowLayer", "visibility", showArrows ? "visible" : "none");
+        }
+    });
+
     async function fetchRadarData() {
         try {
             const url = "https://api.rainviewer.com/public/weather-maps.json?past_hours=6";
             const response = await fetch(url);
             const apiData = await response.json();
-
-            // Map the past frames.
             const pastFrames = apiData.radar.past.map(frame =>
                 `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
             );
             const pastFrameTimes = apiData.radar.past.map(frame => frame.time);
-
-            // Map the nowcast frames.
             const nowcastFrames = apiData.radar.nowcast.map(frame =>
                 `${apiData.host}${frame.path}/256/{z}/{x}/{y}/${wStyle}/1_1.png`
             );
             const nowcastFrameTimes = apiData.radar.nowcast.map(frame => frame.time);
-
-            // Combine both arrays.
             radarFrames = pastFrames.concat(nowcastFrames);
             radarFrameTimes = pastFrameTimes.concat(nowcastFrameTimes);
-
             console.log("Radar frames loaded:", radarFrames.length);
         } catch (err) {
             console.error("Error fetching radar data:", err);
         }
     }
 
-
-    /** Preload all frames using <img> objects **/
     function preloadAllFrames(urls, onComplete) {
         if (!urls.length) { onComplete(); return; }
         framesLoadedCount = 0;
@@ -624,17 +849,14 @@
         });
     }
 
-    /** Setup buffers A and B at 0 opacity **/
     function setupBuffers() {
         if (radarFrames.length) {
             createRadarLayer("radarSourceA", "radarLayerA", radarFrames[0], 0);
         }
-        createRadarLayer("radarSourceB", "radarLayerB",
-            radarFrames.length ? radarFrames[0] : "", 0);
+        createRadarLayer("radarSourceB", "radarLayerB", radarFrames.length ? radarFrames[0] : "", 0);
         updateProgressBar(0);
     }
 
-    /** Create a raster source and layer **/
     function createRadarLayer(sourceId, layerId, tileUrl, initOpacity) {
         if (map.getLayer(layerId)) { map.removeLayer(layerId); }
         if (map.getSource(sourceId)) { map.removeSource(sourceId); }
@@ -654,27 +876,32 @@
         });
     }
 
-    /** Fade a layer from 0 to 1 opacity **/
     function fadeLayerIn(layerId, durationMs) {
         const startTime = performance.now();
         function step(now) {
             const elapsed = now - startTime;
             const fraction = Math.min(elapsed / durationMs, 1);
             if (map.getLayer(layerId)) {
-                map.setPaintProperty(layerId, 'raster-opacity', fraction);
+                map.setPaintProperty(layerId, 'raster-opacity', fraction * radarOpacity);
             }
             if (fraction < 1) requestAnimationFrame(step);
         }
         requestAnimationFrame(step);
     }
 
-    /** Main animation loop using double-buffer crossfade **/
+    // Animation function (ensure button state stays in sync)
     function animateRadar() {
         if (radarFrames.length < 2) return;
+        // Ensure button shows pause symbol when animation starts
+        playPauseBtn.classList.add('paused');
+        isPlaying = true;
         animationInterval = setInterval(() => {
-            const playPauseEl = document.getElementById('playPauseBtn');
-            isPlaying = !playPauseEl.classList.contains('paused');
-            if (!isPlaying) return;
+            if (!isPlaying) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+                playPauseBtn.classList.remove('paused'); // Show play symbol when stopped
+                return;
+            }
             if (pauseActive) {
                 if (Date.now() - pauseStartTime >= END_OF_LOOP_PAUSE_MS) {
                     pauseActive = false;
@@ -690,10 +917,9 @@
                 pauseStartTime = Date.now();
             }
             currentFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
-        }, ANIMATION_INTERVAL_MS);
+        }, animationIntervalMS);
     }
 
-    /** Crossfade to the next frame using buffers A and B **/
     function crossfadeNextFrame() {
         const oldBuf = activeBuffer;
         const newBuf = (oldBuf === "A") ? "B" : "A";
@@ -701,32 +927,33 @@
         const newLayerId = "radarLayer" + newBuf;
         const newSourceId = "radarSource" + newBuf;
         const frameUrl = radarFrames[currentFrameIndex];
-        console.log(`Frame ${currentFrameIndex} => buffer ${newBuf}`, frameUrl);
         createRadarLayer(newSourceId, newLayerId, frameUrl, 0);
         map.once("idle", () => {
             fadeLayers(oldLayerId, newLayerId, FADE_DURATION_MS);
         });
         activeBuffer = newBuf;
+        if (showArrows) {
+            let nextIndex = (currentFrameIndex + 1) % radarFrames.length;
+            computeAndDisplayArrows(radarFrames[currentFrameIndex], radarFrames[nextIndex]);
+        }
     }
 
-    /** Fade out the old layer while fading in the new layer **/
     function fadeLayers(layerOut, layerIn, durationMs) {
         const startTime = performance.now();
         function step(now) {
             const elapsed = now - startTime;
             const fraction = Math.min(elapsed / durationMs, 1);
             if (map.getLayer(layerOut)) {
-                map.setPaintProperty(layerOut, 'raster-opacity', 1 - fraction);
+                map.setPaintProperty(layerOut, 'raster-opacity', (1 - fraction) * radarOpacity);
             }
             if (map.getLayer(layerIn)) {
-                map.setPaintProperty(layerIn, 'raster-opacity', fraction);
+                map.setPaintProperty(layerIn, 'raster-opacity', fraction * radarOpacity);
             }
             if (fraction < 1) requestAnimationFrame(step);
         }
         requestAnimationFrame(step);
     }
 
-    /** Update the progress bar dot **/
     function updateProgressBar(frameIndex) {
         const progressBar = document.getElementById('animationProgress');
         const dot = document.getElementById('progressDot');
@@ -739,7 +966,6 @@
         dot.style.left = (fraction * available) + "px";
     }
 
-    /** Update the time display overlay with the current frame's timestamp **/
     function updateTimeDisplay(frameIndex) {
         if (radarFrameTimes.length > 0) {
             let timestamp = radarFrameTimes[frameIndex];
@@ -750,13 +976,9 @@
         }
     }
 
-    /** NOAA Alerts functions **/
     async function fetchNoaaAlerts() {
         if (!showAlerts) return;
-
-        // Show the spinner (using the existing #spinner element)
         document.getElementById('spinner').style.display = 'block';
-
         const alertUrl = `https://api.weather.gov/alerts/active?area=${stateAlerts}`;
         try {
             const response = await fetch(alertUrl);
@@ -765,7 +987,6 @@
                 console.log("No NOAA alerts found for:", stateAlerts);
                 return;
             }
-            console.log("NOAA Alerts found:", data.features.length);
             for (const feature of data.features) {
                 const eventType = feature.properties.event || "default";
                 if (!alertTypeFilters[eventType]) continue;
@@ -785,12 +1006,9 @@
         } catch (err) {
             console.error("Error fetching NOAA alerts:", err);
         } finally {
-            // Hide the spinner when alerts processing is complete
             document.getElementById('spinner').style.display = 'none';
         }
     }
-
-
 
     function addAlertPolygon(feature, color) {
         const simplifiedFeature = turf.simplify(feature, { tolerance: 0.01, highQuality: false });
@@ -894,7 +1112,6 @@
         new mapboxgl.Popup().setLngLat(lngLat).setDOMContent(popupContent).addTo(map);
     }
 
-    /* === NEW: Side Menu Functionality === */
     document.getElementById('menuButton').addEventListener('click', () => {
         document.getElementById('sideMenu').classList.toggle('open');
     });
@@ -905,21 +1122,6 @@
         } else {
             if (map.getLayer("counties-layer")) map.removeLayer("counties-layer");
             if (map.getSource("counties")) map.removeSource("counties");
-        }
-    });
-    // NEW: Alerts toggle event
-    document.getElementById('menuAlerts').addEventListener('change', (e) => {
-        showAlerts = e.target.checked;
-        const alertTitle = document.getElementById('alertTitle');
-        const alertFilters = document.getElementById('alertFilters');
-        if (showAlerts) {
-            alertTitle.style.display = 'block';
-            alertFilters.style.display = 'block';
-            fetchNoaaAlerts();
-        } else {
-            alertTitle.style.display = 'none';
-            alertFilters.style.display = 'none';
-            removeAllAlertLayers();
         }
     });
 
@@ -974,62 +1176,155 @@
             })
             .catch(err => console.error("Error loading states GeoJSON:", err));
     }
-
-    function getVisibleStateNames() {
-        const features = map.queryRenderedFeatures({ layers: ['states-layer'] });
-        const namesSet = new Set();
-        features.forEach(feature => {
-            if (feature.properties && feature.properties.name) {
-                namesSet.add(feature.properties.name);
-            }
-        });
-        return Array.from(namesSet).join(', ');
-    }
-    function getVisibleStateAbbreviations() {
-        const features = map.queryRenderedFeatures({ layers: ['states-layer'] });
-        const abbrSet = new Set();
-        features.forEach(feature => {
-            if (feature.properties && feature.properties.name) {
-                const abbr = stateNameToAbbr[feature.properties.name] || feature.properties.name;
-                abbrSet.add(abbr);
-            }
-        });
-        return Array.from(abbrSet).join(', ');
-    }
     function getClosestStateAbbreviations(numStates = 3) {
-        // Limit numStates to a value between 1 and 4.
         numStates = Math.max(1, Math.min(numStates, 4));
-
-        // Get the current map center as a Turf point.
         const center = map.getCenter();
         const centerPoint = turf.point([center.lng, center.lat]);
-
-        // Retrieve all features from the "states-layer"
         const features = map.queryRenderedFeatures({ layers: ['states-layer'] });
-
-        // Map each feature to an object containing its abbreviation and distance from the center.
         const featuresWithDistance = features.map(feature => {
             const name = feature.properties && feature.properties.name;
             if (!name) return null;
-            // Get abbreviation from mapping.
             const abbr = stateNameToAbbr[name] || name;
             const centroid = turf.centroid(feature);
             const distance = turf.distance(centerPoint, centroid, { units: 'kilometers' });
             return { abbr, distance };
         }).filter(item => item !== null);
-
-        // Deduplicate by abbreviation (keeping the one with the smallest distance)
         const uniqueStates = {};
         featuresWithDistance.forEach(item => {
             if (!uniqueStates[item.abbr] || uniqueStates[item.abbr].distance > item.distance) {
                 uniqueStates[item.abbr] = item;
             }
         });
-
-        // Sort unique states by distance and take the closest numStates.
         const sortedStates = Object.values(uniqueStates).sort((a, b) => a.distance - b.distance);
         return sortedStates.slice(0, numStates).map(item => item.abbr);
     }
-
-
+    function lng2tile(lon, zoom) {
+        return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+    }
+    function lat2tile(lat, zoom) {
+        return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    }
+    function tile2lng(x, zoom) {
+        return x / Math.pow(2, zoom) * 360 - 180;
+    }
+    function tile2lat(y, zoom) {
+        var n = Math.PI - 2 * Math.PI * y / Math.pow(2, zoom);
+        return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    }
+    function getTileUrl(template, zoom, x, y) {
+        return template.replace('{z}', zoom).replace('{x}', x).replace('{y}', y);
+    }
+    function computeAndDisplayArrows(currentFrameUrlTemplate, nextFrameUrlTemplate) {
+        let center = map.getCenter();
+        let zoom = Math.floor(map.getZoom());
+        let tileX = lng2tile(center.lng, zoom);
+        let tileY = lat2tile(center.lat, zoom);
+        let currentTileUrl = getTileUrl(currentFrameUrlTemplate, zoom, tileX, tileY);
+        let nextTileUrl = getTileUrl(nextFrameUrlTemplate, zoom, tileX, tileY);
+        computeArrowVectors(currentTileUrl, nextTileUrl, tileX, tileY, zoom, function (geojson) {
+            if (!map.getSource("arrowSource")) {
+                map.addSource("arrowSource", { type: "geojson", data: geojson });
+                map.addLayer({
+                    id: "arrowLayer",
+                    type: "symbol",
+                    source: "arrowSource",
+                    layout: {
+                        "icon-image": "arrow-icon",
+                        "icon-rotate": ["get", "direction"],
+                        "icon-size": 0.025,
+                        "icon-allow-overlap": true,
+                        "visibility": showArrows ? "visible" : "none"
+                    }
+                });
+            } else {
+                map.getSource("arrowSource").setData(geojson);
+            }
+        });
+    }
+    function computeArrowVectors(currentTileUrl, nextTileUrl, tileX, tileY, zoom, callback) {
+        let img1 = new Image();
+        let img2 = new Image();
+        let loadedCount = 0;
+        function checkLoaded() {
+            loadedCount++;
+            if (loadedCount < 2) return;
+            let canvas1 = document.createElement('canvas');
+            let canvas2 = document.createElement('canvas');
+            canvas1.width = canvas2.width = 256;
+            canvas1.height = canvas2.height = 256;
+            let ctx1 = canvas1.getContext('2d', { willReadFrequently: true });
+            let ctx2 = canvas2.getContext('2d', { willReadFrequently: true });
+            ctx1.drawImage(img1, 0, 0);
+            ctx2.drawImage(img2, 0, 0);
+            let gridStep = 32;
+            let intensityThreshold = 50;
+            let minMotionThreshold = 2;
+            let arrowFeatures = [];
+            for (let y = 0; y < 256; y += gridStep) {
+                for (let x = 0; x < 256; x += gridStep) {
+                    let width = (x + gridStep > 256) ? 256 - x : gridStep;
+                    let height = (y + gridStep > 256) ? 256 - y : gridStep;
+                    let imgData1 = ctx1.getImageData(x, y, width, height);
+                    let imgData2 = ctx2.getImageData(x, y, width, height);
+                    let data1 = imgData1.data;
+                    let data2 = imgData2.data;
+                    let sumIntensity = 0, sumX = 0, sumY = 0, count = 0;
+                    for (let j = 0; j < height; j++) {
+                        for (let i = 0; i < width; i++) {
+                            let index = (j * width + i) * 4;
+                            let r = data1[index], g = data1[index + 1], b = data1[index + 2];
+                            let intensity = 0.3 * r + 0.59 * g + 0.11 * b;
+                            sumIntensity += intensity;
+                            sumX += i * intensity;
+                            sumY += j * intensity;
+                            count++;
+                        }
+                    }
+                    let avgIntensity = sumIntensity / count;
+                    if (avgIntensity < intensityThreshold) continue;
+                    let centerX1 = sumX / sumIntensity;
+                    let centerY1 = sumY / sumIntensity;
+                    sumIntensity = 0; sumX = 0; sumY = 0; count = 0;
+                    for (let j = 0; j < height; j++) {
+                        for (let i = 0; i < width; i++) {
+                            let index = (j * width + i) * 4;
+                            let r = data2[index], g = data2[index + 1], b = data2[index + 2];
+                            let intensity = 0.3 * r + 0.59 * g + 0.11 * b;
+                            sumIntensity += intensity;
+                            sumX += i * intensity;
+                            sumY += j * intensity;
+                            count++;
+                        }
+                    }
+                    let centerX2 = sumX / sumIntensity;
+                    let centerY2 = sumY / sumIntensity;
+                    let dx = centerX2 - centerX1;
+                    let dy = centerY2 - centerY1;
+                    let mag = Math.sqrt(dx * dx + dy * dy);
+                    if (mag < minMotionThreshold) continue;
+                    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    let pixelCenterX = x + width / 2;
+                    let pixelCenterY = y + height / 2;
+                    let relX = pixelCenterX / 256;
+                    let relY = pixelCenterY / 256;
+                    let lon = tile2lng(tileX + relX, zoom);
+                    let lat = tile2lat(tileY + relY, zoom);
+                    let feature = {
+                        type: "Feature",
+                        geometry: { type: "Point", coordinates: [lon, lat] },
+                        properties: { direction: angle }
+                    };
+                    arrowFeatures.push(feature);
+                }
+            }
+            let geojson = { type: "FeatureCollection", features: arrowFeatures };
+            callback(geojson);
+        }
+        img1.crossOrigin = "anonymous";
+        img2.crossOrigin = "anonymous";
+        img1.src = currentTileUrl + '?cacheBust=' + Date.now();
+        img2.src = nextTileUrl + '?cacheBust=' + Date.now();
+        img1.onload = checkLoaded;
+        img2.onload = checkLoaded;
+    }
 </script>
