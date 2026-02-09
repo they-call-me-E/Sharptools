@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>FlipBoard Stage Editor (Firestore Realtime + WebView Safe)</title>
+<title>FlipBoard Stage Editor</title>
 <style>
   :root{
     --bg:#0b0c10;
@@ -411,7 +411,6 @@
     .splitter{ display:none; }
   }
 
-  /* Status pill states (green/yellow/red) */
   .pill.ok {
     color: var(--ok);
     border-color: rgba(77,210,133,.45);
@@ -430,7 +429,6 @@
 </style>
 </head>
 <body>
-
 <header>
   <div class="title">FlipBoard — Split-Flap Stage Editor</div>
   <div class="meta">
@@ -507,11 +505,11 @@
       <div class="panel">
         <h3>File</h3>
         <div class="row" style="flex-wrap:wrap;">
-          <button id="btnLoad">Load (Dummy)</button>
+          <button id="btnLoad">Load (GitHub)</button>
           <button id="btnExport">Copy JSON</button>
         </div>
         <div class="hint" style="margin-top:10px;">
-          Canonical store is Firestore. The Load button is intentionally dummy-only for quick local testing.
+          Firestore is the canonical store. “Load (GitHub)” is legacy/dummy only.
         </div>
       </div>
     </aside>
@@ -581,17 +579,14 @@
 <div class="toast" id="toast"></div>
 
 <!-- ============================================================
-     Firebase Firestore + Anonymous Auth (WebView-safe, matches Flipboard)
+     Firebase Firestore + Anonymous Auth (StagePack ONLY)
      Provides:
        window.loadStagePack()
        window.saveStagePack(pack)
-       window.subscribeStagePack(cb) -> unsubscribe()
        window.__flipboardFirestoreReady
-       window.__flipboardLastSource
 ============================================================ -->
 <script type="module">
   window.__flipboardFirestoreError = null;
-  window.__flipboardLastSource = "—";
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
@@ -601,8 +596,7 @@
     getDocFromCache,
     getDoc,
     setDoc,
-    serverTimestamp,
-    onSnapshot
+    serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
   import {
     getAuth,
@@ -628,7 +622,7 @@
     try {
       const app = initializeApp(firebaseConfig);
 
-      // ✅ Match Flipboard display: Android/WebView safe transport
+      // Match Flipboard: Android/WebView safe long-polling transport
       const db = initializeFirestore(app, {
         experimentalForceLongPolling: true,
         useFetchStreams: false
@@ -638,96 +632,52 @@
       try { await setPersistence(auth, browserLocalPersistence); } catch(_) {}
       await signInAnonymously(auth);
 
-      console.log("[EDITOR FIRESTORE] AUTH UID:", auth.currentUser?.uid || "(none)");
+      console.log("[EDITOR] AUTH UID:", auth.currentUser?.uid);
 
-      const ref = doc(db, COLLECTION, DOC_ID);
+      const stagePackDocRef = doc(db, COLLECTION, DOC_ID);
 
-      const parseDoc = (snap, label) => {
-        if (!snap.exists()) throw new Error(`Doc not found (${label}).`);
+      window.loadStagePack = async function loadStagePack() {
+        let snap;
+        try {
+          snap = await getDocFromServer(stagePackDocRef);
+          window.__flipboardLastSource = "firestore:server";
+        } catch (_) {
+          snap = await getDocFromCache(stagePackDocRef);
+          window.__flipboardLastSource = "firestore:cache";
+        }
+
+        if (!snap.exists()) throw new Error("Firestore document flipboard/stagePack not found.");
         const raw = snap.get(FIELD);
-        if (typeof raw !== "string" || !raw.trim()) throw new Error(`Field "data" missing (${label}).`);
+        if (typeof raw !== "string" || !raw.trim()) {
+          throw new Error('Firestore field "data" missing or not a non-empty string.');
+        }
         return JSON.parse(raw);
       };
 
-      window.loadStagePack = async function loadStagePack(){
-        // 1) server
-        try{
-          const snap = await getDocFromServer(ref);
-          window.__flipboardLastSource = "firestore:server";
-          console.log("[EDITOR FIRESTORE] got doc from SERVER");
-          return parseDoc(snap, "server");
-        }catch(e1){
-          console.warn("[EDITOR FIRESTORE] server failed, trying CACHE:", e1?.code || e1?.message || e1);
-        }
-
-        // 2) cache
-        try{
-          const snap = await getDocFromCache(ref);
-          window.__flipboardLastSource = "firestore:cache";
-          console.log("[EDITOR FIRESTORE] got doc from CACHE");
-          return parseDoc(snap, "cache");
-        }catch(e2){
-          console.warn("[EDITOR FIRESTORE] cache failed, trying DEFAULT:", e2?.code || e2?.message || e2);
-        }
-
-        // 3) default
-        const snap = await getDoc(ref);
-        window.__flipboardLastSource = "firestore:default";
-        console.log("[EDITOR FIRESTORE] got doc from DEFAULT getDoc()");
-        return parseDoc(snap, "default");
-      };
-
       window.saveStagePack = async function saveStagePack(pack) {
-        // Stored exactly like Flipboard display expects: JSON string in FIELD
-        const json = JSON.stringify(pack);
+        const json = JSON.stringify(pack, null, 2);
 
-        // Simple version bump (optional, but handy)
         let nextVersion = 1;
-        try{
-          const snap = await getDoc(ref);
+        try {
+          const snap = await getDoc(stagePackDocRef);
           if (snap.exists()) {
             const v = snap.get("version");
             nextVersion = (typeof v === "number" && isFinite(v)) ? (v + 1) : 1;
           }
-        }catch(_){}
+        } catch (_) {}
 
-        await setDoc(ref, {
+        await setDoc(stagePackDocRef, {
           [FIELD]: json,
           version: nextVersion,
           updatedAt: serverTimestamp()
         }, { merge: true });
 
-        window.__flipboardLastSource = "firestore:server";
         return { version: nextVersion };
-      };
-
-      // ✅ Realtime updates (cache->server transition visible)
-      window.subscribeStagePack = function subscribeStagePack(cb){
-        if (typeof cb !== "function") throw new Error("subscribeStagePack(cb) requires a callback");
-
-        console.log("[EDITOR FIRESTORE] subscribing to realtime updates…");
-
-        const unsub = onSnapshot(ref, { includeMetadataChanges: true }, (snap) => {
-          try{
-            const fromCache = !!snap.metadata?.fromCache;
-            const src = fromCache ? "firestore:realtime-cache" : "firestore:realtime-server";
-            window.__flipboardLastSource = src;
-
-            const pack = parseDoc(snap, src);
-            cb(pack, src);
-          }catch(err){
-            console.error("[EDITOR FIRESTORE] snapshot parse error:", err);
-          }
-        }, (err) => {
-          console.error("[EDITOR FIRESTORE] onSnapshot error:", err);
-        });
-
-        return unsub;
       };
 
       return true;
     } catch (e) {
-      console.error("[EDITOR FIRESTORE] init failed:", e);
+      console.error("[EDITOR] Firebase init failed:", e);
       window.__flipboardFirestoreError = e;
       throw e;
     }
@@ -736,7 +686,17 @@
 
 <script>
 /* ============================================================
-   Dummy data (fallback + optional local testing)
+   Legacy GitHub fetch variables (still present; not used for Firestore)
+============================================================ */
+const USE_DUMMY_DATA = true;
+let GITHUB_OWNER = "";
+let GITHUB_REPO  = "";
+let GITHUB_BRANCH = "main";
+let GITHUB_FILE_PATH = "";
+let GITHUB_TOKEN = "";
+
+/* ============================================================
+   Dummy data (fallback)
 ============================================================ */
 const DUMMY_STAGE_PACK = {
   "meta": {
@@ -838,10 +798,7 @@ function nextStageKey(stagePack){
   return `stage_${i}`;
 }
 
-/* ============================================================
-   Wait for module globals
-============================================================ */
-function waitForGlobal(name, timeoutMs = 8000, pollMs = 50){
+function waitForGlobal(name, timeoutMs = 6000, pollMs = 50){
   return new Promise((resolve, reject) => {
     const start = Date.now();
     (function tick(){
@@ -853,6 +810,35 @@ function waitForGlobal(name, timeoutMs = 8000, pollMs = 50){
 }
 
 /* ============================================================
+   Legacy GitHub Fetch (Contents API) - optional
+============================================================ */
+async function loadStagePackFromGitHub(){
+  if(!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_FILE_PATH){
+    throw new Error("GitHub variables not set (OWNER/REPO/FILE_PATH).");
+  }
+
+  const url = `https://api.github.com/repos/${encodeURIComponent(GITHUB_OWNER)}/${encodeURIComponent(GITHUB_REPO)}/contents/${encodeURIComponent(GITHUB_FILE_PATH)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`;
+
+  const headers = { "Accept": "application/vnd.github+json" };
+  if(GITHUB_TOKEN){
+    headers["Authorization"] = `Bearer ${GITHUB_TOKEN}`;
+  }
+
+  const res = await fetch(url, { headers });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`GitHub fetch failed: ${res.status} ${res.statusText} ${txt}`.trim());
+  }
+
+  const data = await res.json();
+  if(!data || !data.content) throw new Error("GitHub content response missing file content.");
+
+  const b64 = (data.content || "").replace(/\n/g, "");
+  const jsonText = atob(b64);
+  return JSON.parse(jsonText);
+}
+
+/* ============================================================
    App State
 ============================================================ */
 let stagePack = deepClone(DUMMY_STAGE_PACK);
@@ -861,9 +847,6 @@ let stagePackSaved = deepClone(stagePack);
 let selectedStageKey = null;
 let editorDraft = null;
 let editorDraftSaved = null;
-
-let __unsubStagePack = null;
-let __didFirstRealtime = false;
 
 function getCols(){ return stagePack?.meta?.grid?.columns ?? 20; }
 function getRows(){ return stagePack?.meta?.grid?.rows ?? 8; }
@@ -1456,7 +1439,7 @@ function trimAllRows(){
 }
 
 /* ============================================================
-   Export / Load (dummy button)
+   Export / Load (legacy)
 ============================================================ */
 async function exportJSON(){
   const cols = getCols();
@@ -1476,22 +1459,27 @@ async function exportJSON(){
   toast("JSON copied to clipboard");
 }
 
-async function loadDummy(){
+async function loadFromGitHubOrDummy(){
   if(editorIsDirty()){
-    const ok = confirm("You have unsaved changes.\n\nOK = discard and load dummy.\nCancel = stay here.");
+    const ok = confirm("You have unsaved changes.\n\nOK = discard and load.\nCancel = stay here.");
     if(!ok) return;
   }
 
-  stagePack = deepClone(DUMMY_STAGE_PACK);
-  stagePackSaved = deepClone(stagePack);
+  try{
+    const loaded = USE_DUMMY_DATA ? deepClone(DUMMY_STAGE_PACK) : await loadStagePackFromGitHub();
+    stagePack = loaded;
+    stagePackSaved = deepClone(loaded);
 
-  selectedStageKey = null;
-  editorDraft = null;
-  editorDraftSaved = null;
+    selectedStageKey = null;
+    editorDraft = null;
+    editorDraftSaved = null;
 
-  initFromStagePack();
-  setStatus("dummy", "loaded via button", "warn");
-  toast("Loaded dummy data");
+    initFromStagePack();
+    setStatus(USE_DUMMY_DATA ? "dummy" : "github", "loaded via button", "warn");
+    toast(USE_DUMMY_DATA ? "Loaded dummy data" : "Loaded from GitHub");
+  }catch(err){
+    alert(String(err?.message || err));
+  }
 }
 
 /* ============================================================
@@ -1558,7 +1546,6 @@ function initFromStagePack(){
 ============================================================ */
 btnSave.addEventListener("click", async () => {
   saveStageEdits();
-
   try{
     await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
     await window.__flipboardFirestoreReady;
@@ -1567,8 +1554,7 @@ btnSave.addEventListener("click", async () => {
       await window.saveStagePack(stagePack);
       stagePackSaved = deepClone(stagePack);
       updateDirtyUI();
-
-      setStatus("firestore:server", "saved", "ok");
+      setStatus(window.__flipboardLastSource || "firestore", "saved", "ok");
       toast("Saved to Firestore");
     }else{
       throw new Error("saveStagePack() missing");
@@ -1593,13 +1579,13 @@ btnPadAll.addEventListener("click", padAllRows);
 btnTrimAll.addEventListener("click", trimAllRows);
 
 btnExport.addEventListener("click", exportJSON);
-btnLoad.addEventListener("click", loadDummy);
+btnLoad.addEventListener("click", loadFromGitHubOrDummy);
 
 bindRotationControls();
 bindGlobalGridControls();
 
 /* ============================================================
-   Firestore bootstrap + realtime stagePack subscribe
+   Firestore bootstrap
 ============================================================ */
 (async () => {
   setStatus("starting", "loading…", "warn");
@@ -1617,7 +1603,6 @@ bindGlobalGridControls();
       return;
     }
 
-    // Initial load
     stagePack = await window.loadStagePack();
     stagePackSaved = deepClone(stagePack);
 
@@ -1627,49 +1612,15 @@ bindGlobalGridControls();
 
     initFromStagePack();
 
-    const initialSrc = window.__flipboardLastSource || "firestore";
-    setStatus(initialSrc, "loaded", String(initialSrc).includes("server") ? "ok" : "warn");
+    const src = window.__flipboardLastSource || "firestore";
+    setStatus(src, "loaded", src.includes("server") ? "ok" : "warn");
     toast("Loaded from Firestore");
-
-    // Realtime subscribe (matches Flipboard display)
-    if (__unsubStagePack) { try { __unsubStagePack(); } catch(_){} }
-    if (typeof window.subscribeStagePack === "function") {
-      __unsubStagePack = window.subscribeStagePack((incomingPack, src) => {
-        // Don't clobber active edits
-        if (packIsDirty() || editorIsDirty()) {
-          setStatus(src || "firestore", "remote update (unsaved changes)", "warn");
-          toast("Remote update detected — save/cancel to refresh");
-          return;
-        }
-
-        stagePack = incomingPack;
-        stagePackSaved = deepClone(incomingPack);
-
-        selectedStageKey = null;
-        editorDraft = null;
-        editorDraftSaved = null;
-
-        initFromStagePack();
-
-        const state = String(src || "").includes("server") ? "ok" : "warn";
-        if (!__didFirstRealtime) {
-          __didFirstRealtime = true;
-          setStatus(src || "firestore", "realtime OK", state);
-        } else {
-          setStatus(src || "firestore", "updated", state);
-        }
-      });
-      console.log("[EDITOR] realtime subscribed ✅");
-    } else {
-      console.warn("[EDITOR] subscribeStagePack missing — no realtime");
-    }
 
   }catch(err){
     const msg = String(err?.message || err);
-    console.error("[EDITOR] Firestore bootstrap failed:", err);
+    console.error("Firestore bootstrap failed:", err);
 
     setStatus("dummy", msg, "err");
-
     stagePack = deepClone(DUMMY_STAGE_PACK);
     stagePackSaved = deepClone(stagePack);
     initFromStagePack();
@@ -1679,4 +1630,3 @@ bindGlobalGridControls();
 </script>
 </body>
 </html>
-```0
