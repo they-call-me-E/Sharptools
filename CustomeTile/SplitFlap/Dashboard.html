@@ -1,1632 +1,2559 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>FlipBoard Stage Editor</title>
-<style>
-  :root{
-    --bg:#0b0c10;
-    --panel:#12141b;
-    --panel2:#0f1117;
-    --edge:rgba(255,255,255,.10);
-    --edge2:rgba(255,255,255,.06);
-    --text:#e8e8ef;
-    --muted:rgba(232,232,239,.65);
-    --accent:#3fb1ce;
-    --danger:#ff4d4d;
-    --ok:#4dd285;
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FlipBoard Board Editor</title>
+    <style>
+        :root {
+            --bg: #0b0c10;
+            --panel: #12141b;
+            --panel2: #0f1117;
+            --edge: rgba(255, 255, 255, .10);
+            --edge2: rgba(255, 255, 255, .06);
+            --text: #e8e8ef;
+            --muted: rgba(232, 232, 239, .65);
+            --accent: #3fb1ce;
+            --danger: #ff4d4d;
+            --ok: #4dd285;
 
-    --radius:14px;
-    --pad:14px;
-    --gap:12px;
+            --radius: 14px;
+            --pad: 14px;
+            --gap: 12px;
 
-    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  }
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        }
 
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    background:linear-gradient(180deg, #0b0c10, #07080c);
-    color:var(--text);
-    font-family:var(--sans);
-  }
+        * {
+            box-sizing: border-box
+        }
 
-  header{
-    padding:14px 18px;
-    border-bottom:1px solid var(--edge2);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-  }
-  header .title{
-    font-weight:800;
-    letter-spacing:.2px;
-  }
-  header .meta{
-    font-size:12px;
-    color:var(--muted);
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:flex-end;
-  }
-  header .pill{
-    border:1px solid var(--edge2);
-    background:rgba(255,255,255,.03);
-    padding:6px 10px;
-    border-radius:999px;
-  }
-  header .pill b{color:var(--text)}
-  header .meta .dirty{
-    color:#ffd27a;
-    border-color:rgba(255,210,122,.35);
-  }
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #0b0c10, #07080c);
+            color: var(--text);
+            font-family: var(--sans);
+        }
 
-  .workspace{
-    display:grid;
-    grid-template-rows:auto 1fr;
-    gap:12px;
-    padding:14px;
-    min-height: calc(100vh - 57px);
-  }
+        header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--edge2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
 
-  .app{
-    display:grid;
-    grid-template-columns: 320px 8px 1fr; /* left | splitter | right */
-    gap:0;
-    min-height: 520px;
-  }
+        header .title {
+            font-weight: 800;
+            letter-spacing: .2px;
+        }
 
-  .splitter{
-    cursor: col-resize;
-    background: rgba(255,255,255,.03);
-    border-left: 1px solid rgba(255,255,255,.06);
-    border-right: 1px solid rgba(255,255,255,.06);
-  }
-  .splitter:hover{ background: rgba(63,177,206,.10); }
+        header .meta {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+        }
 
-  .left{
-    border-right:none;
-    background:rgba(0,0,0,.18);
-    padding:var(--pad);
-    display:flex;
-    flex-direction:column;
-    gap:var(--gap);
-    min-width:240px;
-  }
+        header .pill {
+            border: 1px solid var(--edge2);
+            background: rgba(255, 255, 255, .03);
+            padding: 6px 10px;
+            border-radius: 999px;
+        }
 
-  .right{
-    padding:var(--pad);
-    display:flex;
-    flex-direction:column;
-    gap:var(--gap);
-    background: rgba(0,0,0,.10);
-  }
+        header .pill b {
+            color: var(--text)
+        }
 
-  .panel{
-    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-    border:1px solid var(--edge2);
-    border-radius:var(--radius);
-    padding:12px;
-  }
-  .panel h3{
-    margin:0 0 8px 0;
-    font-size:12px;
-    letter-spacing:.6px;
-    text-transform:uppercase;
-    color:var(--muted);
-  }
+        header .meta .dirty {
+            color: #ffd27a;
+            border-color: rgba(255, 210, 122, .35);
+        }
 
-  .globalBar{
-    border-radius:var(--radius);
-  }
-  .globalRow{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:flex-end;
-  }
+        .workspace {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 12px;
+            padding: 14px;
+            min-height: calc(100vh - 57px);
+        }
 
-  .row{
-    display:flex;
-    gap:8px;
-    align-items:center;
-  }
+        .app {
+            display: grid;
+            grid-template-columns: 320px 8px 1fr;
+            /* left | splitter | right */
+            gap: 0;
+            min-height: 520px;
+        }
 
-  button{
-    appearance:none;
-    border:1px solid var(--edge2);
-    background:rgba(255,255,255,.04);
-    color:var(--text);
-    padding:9px 10px;
-    border-radius:12px;
-    cursor:pointer;
-    font-weight:700;
-    font-size:13px;
-    line-height:1;
-    transition:transform .06s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
-  }
-  button:hover{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.14);}
-  button:active{ transform:translateY(1px); }
-  button.primary{
-    border-color:rgba(63,177,206,.45);
-    background:rgba(63,177,206,.14);
-  }
-  button.danger{
-    border-color:rgba(255,77,77,.40);
-    background:rgba(255,77,77,.12);
-  }
-  button:disabled{
-    opacity:.45;
-    cursor:not-allowed;
-  }
+        .splitter {
+            cursor: col-resize;
+            background: rgba(255, 255, 255, .03);
+            border-left: 1px solid rgba(255, 255, 255, .06);
+            border-right: 1px solid rgba(255, 255, 255, .06);
+        }
 
-  .field{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    min-width:180px;
-  }
-  .field label{
-    font-size:11px;
-    color:var(--muted);
-    letter-spacing:.4px;
-    text-transform:uppercase;
-  }
+        .splitter:hover {
+            background: rgba(63, 177, 206, .10);
+        }
 
-  input[type="text"], select, input[type="number"]{
-    width:100%;
-    background:rgba(0,0,0,.22);
-    border:1px solid var(--edge2);
-    color:var(--text);
-    padding:10px 10px;
-    border-radius:12px;
-    outline:none;
-    font-size:14px;
-  }
-  input[type="text"]:focus, select:focus, input[type="number"]:focus{
-    border-color:rgba(63,177,206,.5);
-  }
-  .field.tiny{min-width:120px}
+        .left {
+            border-right: none;
+            background: rgba(0, 0, 0, .18);
+            padding: var(--pad);
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap);
+            min-width: 240px;
+        }
 
-  .toggle{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    padding:10px 12px;
-    border:1px solid var(--edge2);
-    background:rgba(0,0,0,.20);
-    border-radius:12px;
-    height:40px;
-    user-select:none;
-  }
-  .toggle input{ transform:scale(1.1); }
-  .toggle span{
-    font-size:13px;
-    color:var(--text);
-    font-weight:800;
-  }
+        .right {
+            padding: var(--pad);
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap);
+            background: rgba(0, 0, 0, .10);
+        }
 
-  .hint{
-    font-size:12px;
-    color:var(--muted);
-  }
-  .mono{ font-family:var(--mono); }
+        .panel {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02));
+            border: 1px solid var(--edge2);
+            border-radius: var(--radius);
+            padding: 12px;
+        }
 
-  /* Stages panel */
-  .stagesPanel{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    height: 100%;
-  }
-  .dragHint{
-    font-size:11px;
-    color:var(--muted);
-    margin-top:2px;
-  }
-  .sectionTitle{
-    font-size:11px;
-    color:var(--muted);
-    letter-spacing:.4px;
-    text-transform:uppercase;
-    margin: 10px 0 6px;
-  }
-  .list{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-  }
+        .panel h3 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
 
-  .stageItem{
-    border:1px solid var(--edge2);
-    background:rgba(0,0,0,.18);
-    border-radius:12px;
-    padding:10px 10px;
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-    cursor:pointer;
-  }
-  .stageItem:hover{ border-color:rgba(255,255,255,.16); background:rgba(0,0,0,.24); }
-  .stageItem.selected{
-    border-color:rgba(63,177,206,.55);
-    background:rgba(63,177,206,.10);
-  }
+        .globalBar {
+            border-radius: var(--radius);
+        }
 
-  .stageTop{
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    align-items:flex-start;
-  }
-  .stageName{
-    font-weight:900;
-    font-size:13px;
-    line-height:1.2;
-  }
-  .stageKey{
-    font-size:11px;
-    color:var(--muted);
-    font-family:var(--mono);
-  }
-  .badges{
-    display:flex;
-    gap:6px;
-    align-items:center;
-  }
-  .badge{
-    font-size:10px;
-    padding:4px 7px;
-    border-radius:999px;
-    border:1px solid var(--edge2);
-    color:var(--muted);
-    white-space:nowrap;
-    text-transform:uppercase;
-    letter-spacing:.3px;
-  }
-  .badge.dynamic{ border-color:rgba(63,177,206,.40); color:rgba(63,177,206,.95); background:rgba(63,177,206,.10); }
-  .badge.oneshot{ border-color:rgba(255,210,122,.45); color:#ffd27a; background:rgba(255,210,122,.10); }
+        .globalRow {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
 
-  .stageItem[draggable="true"]{ cursor:grab; user-select:none; }
-  .stageItem.dragging{ opacity:.6; border-style:dashed; }
-  .dropTarget{ outline:2px dashed rgba(63,177,206,.6); outline-offset:2px; }
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
 
-  .stageActionsBottom{
-    margin-top:auto;
-    padding-top:12px;
-    border-top:1px solid var(--edge2);
-    display:flex;
-    gap:8px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
+        button {
+            appearance: none;
+            border: 1px solid var(--edge2);
+            background: rgba(255, 255, 255, .04);
+            color: var(--text);
+            padding: 9px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 13px;
+            line-height: 1;
+            transition: transform .06s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+        }
 
-  /* Editor window */
-  .editor{
-    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.10);
-    box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    border-radius:var(--radius);
-    padding:14px;
-    min-height: 420px;
-  }
+        button:hover {
+            background: rgba(255, 255, 255, .06);
+            border-color: rgba(255, 255, 255, .14);
+        }
 
-  .editorHeader{
-    display:flex;
-    gap:12px;
-    align-items:flex-end;
-    flex-wrap:wrap;
-    justify-content:space-between;
-    border-bottom:1px solid var(--edge2);
-    padding-bottom:12px;
-    margin-bottom:12px;
-  }
-  .editorHeader .fields{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    align-items:flex-end;
-  }
-  .field.inlineSmall{min-width:140px}
+        button:active {
+            transform: translateY(1px);
+        }
 
-  .rows{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    margin-top:10px;
-  }
+        button.primary {
+            border-color: rgba(63, 177, 206, .45);
+            background: rgba(63, 177, 206, .14);
+        }
 
-  .lineRow{
-    display:grid;
-    grid-template-columns: 64px 1fr 70px;
-    gap:10px;
-    align-items:center;
-  }
-  .lineRow .lbl{
-    font-size:12px;
-    color:var(--muted);
-    font-family:var(--mono);
-  }
-  .lineRow input{
-    font-family:var(--mono);
-    letter-spacing:.2px;
-  }
-  .lineRow .count{
-    text-align:right;
-    font-size:12px;
-    color:var(--muted);
-    font-family:var(--mono);
-  }
+        button.danger {
+            border-color: rgba(255, 77, 77, .40);
+            background: rgba(255, 77, 77, .12);
+        }
 
-  .flashOver{
-    border-color: rgba(255,77,77,.8) !important;
-    box-shadow: 0 0 0 3px rgba(255,77,77,.15);
-  }
+        button.ghost {
+            border-color: rgba(255, 255, 255, .10);
+            background: rgba(0, 0, 0, .10);
+        }
 
-  .footerBar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    margin-top:14px;
-    padding-top:12px;
-    border-top:1px solid var(--edge2);
-    flex-wrap:wrap;
-  }
-  .split{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
+        button:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
 
-  .toast{
-    position:fixed;
-    bottom:16px;
-    left:50%;
-    transform:translateX(-50%);
-    background:rgba(0,0,0,.75);
-    border:1px solid var(--edge2);
-    color:var(--text);
-    padding:10px 12px;
-    border-radius:999px;
-    font-size:13px;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .2s ease, transform .2s ease;
-  }
-  .toast.show{
-    opacity:1;
-    transform:translateX(-50%) translateY(-4px);
-  }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
 
-  @media (max-width: 900px){
-    .workspace{ padding: 10px; }
-    .app{ grid-template-columns: 1fr; }
-    .splitter{ display:none; }
-  }
+        .field label {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: .4px;
+            text-transform: uppercase;
+        }
 
-  .pill.ok {
-    color: var(--ok);
-    border-color: rgba(77,210,133,.45);
-    background: rgba(77,210,133,.12);
-  }
-  .pill.warn {
-    color: #ffd27a;
-    border-color: rgba(255,210,122,.45);
-    background: rgba(255,210,122,.12);
-  }
-  .pill.err {
-    color: var(--danger);
-    border-color: rgba(255,77,77,.45);
-    background: rgba(255,77,77,.12);
-  }
-</style>
+        input[type="text"],
+        select,
+        input[type="number"] {
+            width: 100%;
+            background: rgba(0, 0, 0, .22);
+            border: 1px solid var(--edge2);
+            color: var(--text);
+            padding: 10px 10px;
+            border-radius: 12px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        input[type="number"]:focus {
+            border-color: rgba(63, 177, 206, .5);
+        }
+
+        .field.tiny {
+            min-width: 120px
+        }
+
+        .toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 10px 12px;
+            border: 1px solid var(--edge2);
+            background: rgba(0, 0, 0, .20);
+            border-radius: 12px;
+            height: 40px;
+            user-select: none;
+        }
+
+        .toggle input {
+            transform: scale(1.1);
+        }
+
+        .toggle span {
+            font-size: 13px;
+            color: var(--text);
+            font-weight: 900;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .mono {
+            font-family: var(--mono);
+        }
+
+        /* Boards panel */
+        .boardsPanel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: 100%;
+        }
+
+        .dragHint {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .sectionTitle {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: .4px;
+            text-transform: uppercase;
+            margin: 10px 0 6px;
+        }
+
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .boardItem {
+            border: 1px solid var(--edge2);
+            background: rgba(0, 0, 0, .18);
+            border-radius: 12px;
+            padding: 10px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .boardItem:hover {
+            border-color: rgba(255, 255, 255, .16);
+            background: rgba(0, 0, 0, .24);
+        }
+
+        .boardItem.selected {
+            border-color: rgba(63, 177, 206, .55);
+            background: rgba(63, 177, 206, .10);
+        }
+
+        .boardTop {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .boardName {
+            font-weight: 900;
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        .boardKey {
+            font-size: 11px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+
+        .badges {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 4px 7px;
+            border-radius: 999px;
+            border: 1px solid var(--edge2);
+            color: var(--muted);
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .badge.dynamic {
+            border-color: rgba(63, 177, 206, .40);
+            color: rgba(63, 177, 206, .95);
+            background: rgba(63, 177, 206, .10);
+        }
+
+        .badge.oneshot {
+            border-color: rgba(255, 210, 122, .45);
+            color: #ffd27a;
+            background: rgba(255, 210, 122, .10);
+        }
+
+        .boardItem[draggable="true"] {
+            cursor: grab;
+            user-select: none;
+        }
+
+        .boardItem.dragging {
+            opacity: .6;
+            border-style: dashed;
+        }
+
+        .dropTarget {
+            outline: 2px dashed rgba(63, 177, 206, .6);
+            outline-offset: 2px;
+        }
+
+        .boardActionsBottom {
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--edge2);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Editor window */
+        .editor {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02));
+            border: 1px solid rgba(255, 255, 255, .10);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            border-radius: var(--radius);
+            padding: 14px;
+            min-height: 420px;
+        }
+
+        .editorHeader {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--edge2);
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+
+        .editorHeader .fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .field.inlineSmall {
+            min-width: 140px
+        }
+
+        .rows {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .lineRow {
+            display: grid;
+            grid-template-columns: 64px 1fr 70px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .lineRow .lbl {
+            font-size: 12px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+
+        .lineRow input {
+            font-family: var(--mono);
+            letter-spacing: .2px;
+        }
+
+        .lineRow .count {
+            text-align: right;
+            font-size: 12px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+
+        .flashOver {
+            border-color: rgba(255, 77, 77, .8) !important;
+            box-shadow: 0 0 0 3px rgba(255, 77, 77, .15);
+        }
+
+        .footerBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--edge2);
+            flex-wrap: wrap;
+        }
+
+        .split {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, .75);
+            border: 1px solid var(--edge2);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease;
+            z-index: 9999;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        /* Helper list */
+        .helpList {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .helpGroup {
+            border: 1px solid rgba(255, 255, 255, .06);
+            background: rgba(0, 0, 0, .18);
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .helpGroupTitle {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .helpGroupTitle b {
+            font-size: 12px;
+            letter-spacing: .4px;
+            text-transform: uppercase;
+            color: rgba(232, 232, 239, .8);
+        }
+
+        .helpItem {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 6px 0;
+            border-top: 1px solid rgba(255, 255, 255, .05);
+        }
+
+        .helpItem:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .helpToken {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: rgba(255, 255, 255, .9);
+            letter-spacing: .2px;
+            word-break: break-word;
+        }
+
+        .helpDesc {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 3px;
+            line-height: 1.25;
+        }
+
+        .helpBtn {
+            padding: 7px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .helpGroupBody {
+            display: block;
+            margin-top: 8px;
+        }
+
+        .helpGroupBody.collapsed {
+            display: none;
+        }
+
+        /* optional, just makes the caret feel clickable */
+        .helpToggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+
+        /* Modal */
+        .modalOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .62);
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 10000;
+            padding: 12px;
+        }
+
+        .modalOverlay.show {
+            display: flex;
+        }
+
+        .modal {
+            width: min(760px, 100%);
+            max-height: 86vh;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: linear-gradient(180deg, rgba(20, 22, 29, .96), rgba(10, 12, 16, .96));
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .65);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modalHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        .modalHeader .title {
+            font-weight: 900;
+            letter-spacing: .3px;
+        }
+
+        .modalClose {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(255, 255, 255, .04);
+            cursor: pointer;
+            user-select: none;
+            font-weight: 900;
+        }
+
+        .modalBody {
+            padding: 12px;
+            overflow: auto;
+        }
+
+        .modalHint {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0 0 10px 0;
+            line-height: 1.35;
+        }
+
+        @media (max-width: 900px) {
+            .workspace {
+                padding: 10px;
+            }
+
+            .app {
+                grid-template-columns: 1fr;
+            }
+
+            .splitter {
+                display: none;
+            }
+
+            /* hide the huge inline helper list on mobile */
+            .desktopHelper {
+                display: none !important;
+            }
+
+            .modalOverlay {
+                align-items: flex-end;
+            }
+
+            /* bottom sheet feel */
+            .modal {
+                border-radius: 18px;
+            }
+        }
+
+        /* desktop: keep helper panel visible, but still allow modal button */
+        @media (min-width: 901px) {
+            .mobileHelperBtnOnly {
+                display: none !important;
+            }
+        }
+
+        .pill.ok {
+            color: var(--ok);
+            border-color: rgba(77, 210, 133, .45);
+            background: rgba(77, 210, 133, .12);
+        }
+
+        .pill.warn {
+            color: #ffd27a;
+            border-color: rgba(255, 210, 122, .45);
+            background: rgba(255, 210, 122, .12);
+        }
+
+        .pill.err {
+            color: var(--danger);
+            border-color: rgba(255, 77, 77, .45);
+            background: rgba(255, 77, 77, .12);
+        }
+
+        /* ============================================================
+               THEME FIX: Select dropdown + number stepper arrows
+               (Chrome/Edge/Firefox)
+            ============================================================ */
+
+        /* tighten look for selects/numbers to match theme */
+        select,
+        input[type="number"] {
+            background: rgba(0, 0, 0, .28) !important;
+            border: 1px solid var(--edge2) !important;
+            color: var(--text) !important;
+        }
+
+        /* Custom themed select arrow */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+
+            padding-right: 38px;
+            /* room for arrow */
+            cursor: pointer;
+
+            background-image:
+                linear-gradient(45deg, transparent 50%, rgba(232, 232, 239, .75) 50%),
+                linear-gradient(135deg, rgba(232, 232, 239, .75) 50%, transparent 50%),
+                linear-gradient(to right, rgba(255, 255, 255, .10), rgba(255, 255, 255, .10));
+            background-position:
+                calc(100% - 18px) 50%,
+                calc(100% - 12px) 50%,
+                calc(100% - 34px) 50%;
+            background-size:
+                6px 6px,
+                6px 6px,
+                1px 18px;
+            background-repeat: no-repeat;
+        }
+
+        select:hover {
+            border-color: rgba(255, 255, 255, .14) !important;
+            background-color: rgba(0, 0, 0, .34) !important;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: rgba(63, 177, 206, .5) !important;
+            box-shadow: 0 0 0 3px rgba(63, 177, 206, .12);
+        }
+
+        /* Dropdown list theming (works where supported) */
+        select option {
+            background: #0f1117;
+            color: var(--text);
+        }
+
+        select option:checked {
+            background: rgba(63, 177, 206, .82);
+            color: var(--text);
+        }
+
+        /* Chrome/Edge number stepper arrows: make them light on dark */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+            filter: invert(1) brightness(1.15) contrast(1.05);
+        }
+
+        .formGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .formGrid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
 </head>
+
 <body>
-<header>
-  <div class="title">FlipBoard — Split-Flap Stage Editor</div>
-  <div class="meta">
-    <div class="pill"><b>Cols:</b> <span id="colsVal">—</span></div>
-    <div class="pill"><b>Rows:</b> <span id="rowsVal">—</span></div>
-    <div class="pill"><b>Dwell:</b> <span id="dwellVal">—</span></div>
+    <header>
+        <div class="title">FlipBoard — Split-Flap Board Editor</div>
+        <div class="meta">
+            <div class="pill"><b>Cols:</b> <span id="colsVal">—</span></div>
+            <div class="pill"><b>Rows:</b> <span id="rowsVal">—</span></div>
+            <div class="pill"><b>Dwell:</b> <span id="dwellVal">—</span></div>
 
-    <div class="pill"><b>Source:</b> <span id="sourceVal">—</span></div>
-    <div class="pill"><b>Status:</b> <span id="statusVal">—</span></div>
+            <div class="pill"><b>Source:</b> <span id="sourceVal">—</span></div>
+            <div class="pill"><b>Status:</b> <span id="statusVal">—</span></div>
 
-    <div class="pill" id="dirtyPill" style="display:none;"><b>Unsaved changes</b></div>
-  </div>
-</header>
+            <div class="pill" id="dirtyPill" style="display:none;"><b>Unsaved changes</b></div>
+        </div>
+    </header>
 
-<div class="workspace" id="workspace">
+    <div class="workspace" id="workspace">
 
-  <div class="globalBar panel">
-    <h3>Dashboard Settings</h3>
+        <div class="globalBar panel">
+            <h3>Dashboard Settings</h3>
 
-    <div class="globalRow">
-      <div class="toggle">
-        <input type="checkbox" id="rotationEnabled" />
-        <span>Rotation Enabled</span>
-      </div>
+            <div class="globalRow">
+                <div class="toggle">
+                    <input type="checkbox" id="rotationEnabled" />
+                    <span>Rotation Enabled</span>
+                </div>
 
-      <div class="field tiny">
-        <label for="rotationDwell">Dwell (ms)</label>
-        <input type="number" id="rotationDwell" min="0" step="100" />
-      </div>
+                <div class="field tiny">
+                    <label for="rotationDwell">Dwell (ms)</label>
+                    <input type="number" id="rotationDwell" min="0" step="100" />
+                </div>
 
-      <div class="field tiny">
-        <label for="gridCols">Columns</label>
-        <input type="number" id="gridCols" min="1" step="1" />
-      </div>
+                <div class="field tiny">
+                    <label for="gridCols">Columns</label>
+                    <input type="number" id="gridCols" min="1" step="1" />
+                </div>
 
-      <div class="field tiny">
-        <label for="gridRows">Rows</label>
-        <input type="number" id="gridRows" min="1" step="1" />
-      </div>
+                <div class="field tiny">
+                    <label for="gridRows">Rows</label>
+                    <input type="number" id="gridRows" min="1" step="1" />
+                </div>
 
-      <div class="field" style="min-width:260px;flex:1;">
-        <label for="metaDescription">Description</label>
-        <input type="text" id="metaDescription" placeholder="Stage pack description" />
-      </div>
+                <div class="field" style="min-width:260px;flex:1;">
+                    <label for="metaDescription">Description</label>
+                    <input type="text" id="metaDescription" placeholder="Pack description" />
+                </div>
+
+                <!-- Minimal weather config (kept conservative): label/value/type stored under meta.weather.location -->
+                <div class="field" style="min-width:180px;">
+                    <label for="weatherType">Weather Type</label>
+                    <select id="weatherType">
+                        <option value="city">city</option>
+                        <option value="city_state">city_state</option>
+                        <option value="zip">zip</option>
+                    </select>
+                </div>
+
+                <div class="field" style="min-width:260px;flex:1;">
+                    <label for="weatherValue">Weather Value</label>
+                    <input type="text" id="weatherValue" placeholder="Boiling Springs / Boiling Springs, SC / 29316" />
+                </div>
+
+                <div class="field" style="min-width:220px;">
+                    <label for="weatherLabel">Weather Label</label>
+                    <input type="text" id="weatherLabel" placeholder="BOILING SPGS SC" />
+                </div>
+            </div>
+
+            <div class="hint" style="margin-top:10px;">
+                Weather settings are saved under <span class="mono">meta.weather.location</span>. FlipBoard Display uses
+                these to fetch + render <span class="mono">{LOCATION}</span>.
+                (Editor makes no API calls.)
+            </div>
+        </div>
+
+        <div class="app" id="appSplit">
+            <aside class="left" id="leftPane">
+                <div class="panel boardsPanel">
+                    <h3>Boards</h3>
+
+                    <div class="dragHint">Drag to reorder the rotation list.</div>
+
+                    <div class="sectionTitle">In Rotation</div>
+                    <div id="rotationList" class="list sortable" aria-label="Rotation order list"></div>
+
+                    <div class="sectionTitle" style="margin-top:12px;">Not in Rotation</div>
+                    <div id="otherList" class="list" aria-label="Other boards list"></div>
+
+                    <div class="boardActionsBottom">
+                        <button class="primary" id="btnAddBoard">+ Add Board</button>
+                        <button class="danger" id="btnDeleteBoard" disabled>Delete</button>
+
+                        <button id="btnMoveUp" disabled title="Move selected board up in rotation">▲</button>
+                        <button id="btnMoveDown" disabled title="Move selected board down in rotation">▼</button>
+
+                        <div style="flex:1;"></div>
+                        <button id="btnAddToRotation" disabled>Add</button>
+                        <button id="btnRemoveFromRotation" disabled>Remove</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>File</h3>
+                    <div class="row" style="flex-wrap:wrap;">
+                        <button class="primary" id="btnSavePack" disabled>Save</button>
+                        <button id="btnCopyJSON">Copy JSON</button>
+                        <button id="btnReload" title="Reload from Firestore (discard local changes)">Reload</button>
+                    </div>
+                    <div class="hint" style="margin-top:10px;">
+                        One Save button saves the entire pack (rotation + grid + boards) to Firestore.
+                    </div>
+                </div>
+
+                <!-- Helper (desktop inline, mobile modal) -->
+                <div class="panel">
+                    <h3>Weather Tokens Helper</h3>
+
+                    <div class="row" style="flex-wrap:wrap;">
+                        <button class="primary" id="btnOpenTokenModal">Open tokens</button>
+                        <button class="ghost" id="btnCopyTokenDoc">Copy quick doc</button>
+                    </div>
+
+                    <div class="hint" style="margin-top:10px;">
+                        Use tokens in rows like: <span class="mono">TEMP: {TEMP_LINE}</span> or a JSON path like <span
+                            class="mono">{current.temp}</span>.
+                    </div>
+
+                    <div class="desktopHelper" style="margin-top:12px;">
+                        <div class="helpList" id="helpListInline"></div>
+                    </div>
+
+                    <div class="mobileHelperBtnOnly hint" style="margin-top:10px;">
+                        On mobile, the full list opens in a popup.
+                    </div>
+                </div>
+
+            </aside>
+
+            <div class="splitter" id="splitter" title="Drag to resize"></div>
+
+            <main class="right" id="rightPane">
+                <div class="editor" id="editor">
+                    <div class="editorHeader">
+                        <div class="fields">
+                            <div class="field">
+                                <label for="boardKey">Board Key (ID)</label>
+                                <input id="boardKey" type="text" disabled />
+                            </div>
+
+                            <div class="field">
+                                <label for="boardName">Board Name</label>
+                                <input id="boardName" type="text" placeholder="Friendly name" />
+                            </div>
+
+                            <div class="field inlineSmall">
+                                <label for="boardType">Type</label>
+                                <select id="boardType">
+                                    <option value="static">static</option>
+                                    <option value="dynamic">dynamic</option>
+                                </select>
+                            </div>
+
+                            <div class="field inlineSmall" id="sourceWrap" style="display:none;">
+                                <label for="boardSource">Source</label>
+                                <input id="boardSource" type="text" placeholder="openweather_onecall" />
+                            </div>
+
+                            <div class="toggle"
+                                title="If enabled, this board should run once when triggered (not part of normal rotation).">
+                                <input type="checkbox" id="boardOneShot" />
+                                <span>One-shot</span>
+                            </div>
+                        </div>
+
+                        <div class="split">
+                            <button id="btnDiscardEdits" disabled>Discard</button>
+                        </div>
+                    </div>
+
+                    <div class="hint">
+                        Rows are padded to <span class="mono" id="colsHint">—</span> columns.
+                        Inputs accept max <span class="mono" id="colsHint2">—</span> chars. Pasting beyond the limit
+                        will flash red.
+                        Flipboard enforces UPPERCASE (this editor does too).
+                    </div>
+
+                    <div class="rows" id="rowsContainer"></div>
+
+                    <div class="footerBar">
+                        <div class="hint">
+                            Friendly name is for the editor. Flipboard uses board keys (IDs).
+                        </div>
+                        <div class="split">
+                            <button id="btnPadAll">Pad all rows</button>
+                            <button id="btnTrimAll">Trim all rows</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
-  </div>
 
-  <div class="app" id="appSplit">
-    <aside class="left" id="leftPane">
-      <div class="panel stagesPanel">
-        <h3>Stages</h3>
+    <div class="toast" id="toast"></div>
 
-        <div class="dragHint">Drag to reorder the rotation list.</div>
+    <!-- Modal: tokens -->
+    <div class="modalOverlay" id="tokenModalOverlay" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Weather Tokens Helper">
+            <div class="modalHeader">
+                <div class="title">Weather Tokens Helper</div>
+                <div class="modalClose" id="tokenModalClose" title="Close">✕</div>
+            </div>
+            <div class="modalBody">
+                <p class="modalHint">
+                    Tokens are anything inside curly braces. Flipboard will replace them with weather values.
+                    You can use preset tokens (recommended) or raw JSON paths for less common fields.
+                    If a value is missing, Flipboard should show <span class="mono">--</span> or <span
+                        class="mono">N/A</span>.
+                </p>
 
-        <div class="sectionTitle">In Rotation</div>
-        <div id="rotationList" class="list sortable" aria-label="Rotation order list"></div>
+                <div class="helpList" id="helpListModal"></div>
 
-        <div class="sectionTitle" style="margin-top:12px;">Not in Rotation</div>
-        <div id="otherList" class="list" aria-label="Other stages list"></div>
-
-        <div class="stageActionsBottom">
-          <button class="primary" id="btnAddStage">+ Add Stage</button>
-          <button class="danger" id="btnRemoveStage" disabled>Remove</button>
-
-          <button id="btnMoveUp" disabled title="Move selected stage up in rotation">▲</button>
-          <button id="btnMoveDown" disabled title="Move selected stage down in rotation">▼</button>
-
-          <div style="flex:1;"></div>
-          <button id="btnAddToRotation" disabled>Add</button>
-          <button id="btnRemoveFromRotation" disabled>Remove</button>
+                <div class="hint" style="margin-top:12px;">
+                    Tip: combine text + tokens like <span class="mono">TEMP: {TEMP_LINE}</span> or <span
+                        class="mono">WIND: {current.wind_speed}</span>.
+                </div>
+            </div>
         </div>
-      </div>
-
-      <div class="panel">
-        <h3>File</h3>
-        <div class="row" style="flex-wrap:wrap;">
-          <button id="btnLoad">Load (GitHub)</button>
-          <button id="btnExport">Copy JSON</button>
-        </div>
-        <div class="hint" style="margin-top:10px;">
-          Firestore is the canonical store. “Load (GitHub)” is legacy/dummy only.
-        </div>
-      </div>
-    </aside>
-
-    <div class="splitter" id="splitter" title="Drag to resize"></div>
-
-    <main class="right" id="rightPane">
-      <div class="editor" id="editor">
-        <div class="editorHeader">
-          <div class="fields">
-            <div class="field">
-              <label for="stageKey">Stage Key (ID)</label>
-              <input id="stageKey" type="text" disabled />
+    </div>
+    <!-- Modal: create board -->
+    <div class="modalOverlay" id="createBoardOverlay" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Create New Board">
+            <div class="modalHeader">
+                <div class="title">Create New Board</div>
+                <div class="modalClose" id="createBoardClose" title="Close">✕</div>
             </div>
 
-            <div class="field">
-              <label for="stageName">Stage Name</label>
-              <input id="stageName" type="text" placeholder="Friendly name" />
-            </div>
+            <div class="modalBody">
+                <p class="modalHint">
+                    Create a board in one shot. Keys must be unique and will be normalized to
+                    lowercase_with_underscores.
+                </p>
 
-            <div class="field inlineSmall">
-              <label for="stageType">Type</label>
-              <select id="stageType">
-                <option value="static">static</option>
-                <option value="dynamic">dynamic</option>
-              </select>
-            </div>
+                <div class="formGrid">
+                    <div class="field">
+                        <label for="cbKey">Board Key (ID)</label>
+                        <input id="cbKey" type="text" placeholder="stage_4" />
+                        <div class="hint">Example: <span class="mono">stage_4</span>, <span class="mono">weather</span>,
+                            <span class="mono">welcome_screen</span>
+                        </div>
+                    </div>
 
-            <div class="field inlineSmall" id="sourceWrap" style="display:none;">
-              <label for="stageSource">Source</label>
-              <input id="stageSource" type="text" placeholder="openweather_onecall" />
-            </div>
+                    <div class="field">
+                        <label for="cbName">Board Name</label>
+                        <input id="cbName" type="text" placeholder="New Board" />
+                    </div>
 
-            <div class="toggle" title="If enabled, this stage should run once when triggered (not part of normal rotation).">
-              <input type="checkbox" id="stageOneShot" />
-              <span>One-shot</span>
-            </div>
-          </div>
+                    <div class="toggle" style="margin-top:6px;">
+                        <input type="checkbox" id="cbIsWeather" />
+                        <span>Weather board</span>
+                    </div>
 
-          <div class="split">
-            <button class="primary" id="btnSave" disabled>Save</button>
-            <button id="btnCancel" disabled>Cancel</button>
-          </div>
+                    <div class="hint" style="grid-column: 1 / -1; margin-top:-6px;">
+                        If checked, this board will be created as <span class="mono">type=dynamic</span> with
+                        <span class="mono">source=openweather_onecall</span>.
+                    </div>
+
+
+                    <div class="toggle" style="margin-top:6px;">
+                        <input type="checkbox" id="cbOneShot" />
+                        <span>One-shot (not part of normal rotation)</span>
+                    </div>
+
+                    <div class="toggle" style="margin-top:6px;">
+                        <input type="checkbox" id="cbAddToRotation" checked />
+                        <span>Add to rotation</span>
+                    </div>
+                </div>
+
+                <div class="row" style="justify-content:flex-end; margin-top:14px; gap:10px;">
+                    <button class="ghost" id="cbCancel">Cancel</button>
+                    <button class="primary" id="cbCreate">Create Board</button>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="hint">
-          Rows are padded to <span class="mono" id="colsHint">—</span> columns on save.
-          Inputs accept max <span class="mono" id="colsHint2">—</span> chars. Pasting beyond the limit will flash red.
-        </div>
-
-        <div class="rows" id="rowsContainer"></div>
-
-        <div class="footerBar">
-          <div class="hint">
-            Friendly name is for the editor. Engine should use stage keys (IDs).
-          </div>
-          <div class="split">
-            <button id="btnPadAll">Pad all rows</button>
-            <button id="btnTrimAll">Trim all rows</button>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- ============================================================
-     Firebase Firestore + Anonymous Auth (StagePack ONLY)
-     Provides:
-       window.loadStagePack()
-       window.saveStagePack(pack)
-       window.__flipboardFirestoreReady
+    <!-- ============================================================
+     Firebase Firestore + Anonymous Auth (Pack ONLY)
 ============================================================ -->
-<script type="module">
-  window.__flipboardFirestoreError = null;
+    <script type="module">
+        window.__flipboardFirestoreError = null;
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import {
-    initializeFirestore,
-    doc,
-    getDocFromServer,
-    getDocFromCache,
-    getDoc,
-    setDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-  import {
-    getAuth,
-    signInAnonymously,
-    setPersistence,
-    browserLocalPersistence
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import {
+            initializeFirestore,
+            doc,
+            getDocFromServer,
+            getDocFromCache,
+            getDoc,
+            setDoc,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            setPersistence,
+            browserLocalPersistence
+        } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBMeYQiNcfhkFVtmbKAbDnFILfUz3nLY50",
-    authDomain: "flipboard-937e3.firebaseapp.com",
-    projectId: "flipboard-937e3",
-    storageBucket: "flipboard-937e3.firebasestorage.app",
-    messagingSenderId: "926200267004",
-    appId: "1:926200267004:web:1ee00c4d344f670b775779"
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMeYQiNcfhkFVtmbKAbDnFILfUz3nLY50",
+            authDomain: "flipboard-937e3.firebaseapp.com",
+            projectId: "flipboard-937e3",
+            storageBucket: "flipboard-937e3.firebasestorage.app",
+            messagingSenderId: "926200267004",
+            appId: "1:926200267004:web:1ee00c4d344f670b775779"
+        };
 
-  const COLLECTION = "flipboard";
-  const DOC_ID = "stagePack";
-  const FIELD = "data";
+        const COLLECTION = "flipboard";
+        const DOC_ID = "boardPack";   // ✅ matches your Firestore screenshot
+        const FIELD = "data";
 
-  window.__flipboardFirestoreReady = (async () => {
-    try {
-      const app = initializeApp(firebaseConfig);
+        window.__flipboardFirestoreReady = (async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
 
-      // Match Flipboard: Android/WebView safe long-polling transport
-      const db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        useFetchStreams: false
-      });
+                // Android/WebView safe long-polling transport
+                const db = initializeFirestore(app, {
+                    experimentalForceLongPolling: true,
+                    useFetchStreams: false
+                });
 
-      const auth = getAuth(app);
-      try { await setPersistence(auth, browserLocalPersistence); } catch(_) {}
-      await signInAnonymously(auth);
+                const auth = getAuth(app);
+                try { await setPersistence(auth, browserLocalPersistence); } catch (_) { }
+                await signInAnonymously(auth);
 
-      console.log("[EDITOR] AUTH UID:", auth.currentUser?.uid);
+                console.log("[EDITOR] AUTH UID:", auth.currentUser?.uid);
 
-      const stagePackDocRef = doc(db, COLLECTION, DOC_ID);
+                const packDocRef = doc(db, COLLECTION, DOC_ID);
 
-      window.loadStagePack = async function loadStagePack() {
-        let snap;
-        try {
-          snap = await getDocFromServer(stagePackDocRef);
-          window.__flipboardLastSource = "firestore:server";
-        } catch (_) {
-          snap = await getDocFromCache(stagePackDocRef);
-          window.__flipboardLastSource = "firestore:cache";
+                window.loadStagePack = async function loadStagePack() {
+                    try {
+                        const snap = await getDocFromServer(packDocRef);
+                        window.__flipboardLastSource = "firestore:server";
+                        if (!snap.exists()) throw new Error("Firestore document flipboard/boardPack not found.");
+                        const raw = snap.get(FIELD);
+                        if (typeof raw !== "string" || !raw.trim()) throw new Error('Firestore field "data" missing or not a non-empty string.');
+                        return JSON.parse(raw);
+                    } catch (e1) {
+                        console.warn("[EDITOR] server failed, trying cache:", e1?.code || e1?.message || e1);
+                    }
+
+                    try {
+                        const snap = await getDocFromCache(packDocRef);
+                        window.__flipboardLastSource = "firestore:cache";
+                        if (!snap.exists()) throw new Error("Firestore document flipboard/boardPack not found (cache).");
+                        const raw = snap.get(FIELD);
+                        if (typeof raw !== "string" || !raw.trim()) throw new Error('Firestore field "data" missing (cache).');
+                        return JSON.parse(raw);
+                    } catch (e2) {
+                        console.warn("[EDITOR] cache failed, trying default getDoc:", e2?.code || e2?.message || e2);
+                    }
+
+                    const snap = await getDoc(packDocRef);
+                    window.__flipboardLastSource = "firestore:default";
+                    if (!snap.exists()) throw new Error("Firestore document flipboard/boardPack not found (default).");
+                    const raw = snap.get(FIELD);
+                    if (typeof raw !== "string" || !raw.trim()) throw new Error('Firestore field "data" missing (default).');
+                    return JSON.parse(raw);
+                };
+
+                window.saveStagePack = async function saveStagePack(pack) {
+                    const json = JSON.stringify(pack, null, 2);
+
+                    let nextVersion = 1;
+                    try {
+                        const snap = await getDoc(packDocRef);
+                        if (snap.exists()) {
+                            const v = snap.get("version");
+                            nextVersion = (typeof v === "number" && isFinite(v)) ? (v + 1) : 1;
+                        }
+                    } catch (_) { }
+
+                    await setDoc(packDocRef, {
+                        [FIELD]: json,
+                        version: nextVersion,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+
+                    return { version: nextVersion };
+                };
+
+                return true;
+            } catch (e) {
+                console.error("[EDITOR] Firebase init failed:", e);
+                window.__flipboardFirestoreError = e;
+                throw e;
+            }
+        })();
+    </script>
+
+    <script>
+        /* ============================================================
+           Dummy fallback pack (used only if Firestore load fails)
+        ============================================================ */
+        const DUMMY_PACK = {
+            "meta": {
+                "grid": { "columns": 20, "rows": 8 },
+                "description": "Split-flap dashboard board definitions",
+                "weather": {
+                    "location": { "type": "city_state", "value": "Boiling Springs, SC", "label": "BOILING SPGS SC" }
+                }
+            },
+            "rotation": {
+                "enabled": true,
+                "dwell_ms": 15000,
+                "order": ["stage_2", "stage_1", "stage_3"]
+            },
+            "boards": {
+                "stage_1": {
+                    "name": "Weather",
+                    "type": "dynamic",
+                    "source": "openweather_onecall",
+                    "rows": [
+                        "BOILING SPGS SC     ",
+                        "{TEMP_LINE}         ",
+                        "{CONDITION_LINE}    ",
+                        "{WIND_LINE}         ",
+                        "                    ",
+                        "UPDATED: {TIME}     ",
+                        "                    ",
+                        "                    "
+                    ]
+                },
+                "stage_2": {
+                    "name": "Welcome Screen",
+                    "type": "static",
+                    "rows": [
+                        "WELCOME             ",
+                        "JAKE                ",
+                        "SMART HOME DASHBOARD",
+                        "                    ",
+                        "SPLIT FLAP DISPLAY  ",
+                        "                    ",
+                        "                    ",
+                        "                    "
+                    ]
+                },
+                "stage_3": {
+                    "name": "Today Schedule",
+                    "type": "static",
+                    "rows": [
+                        "4:00 PM  TUTOR E    ",
+                        "5-7 PM   BULLDOG    ",
+                        "        BALL        ",
+                        "7:30 PM  DINNER     ",
+                        "9:00 PM  WIND DOWN  ",
+                        "                    ",
+                        "                    ",
+                        "                    "
+                    ]
+                },
+                "stage_demo": {
+                    "name": "Demo Mode",
+                    "type": "static",
+                    "one_shot": true,
+                    "rows": [
+                        "DEMO MODE           ",
+                        "STAGE TEST          ",
+                        "SPLIT FLAP          ",
+                        "ANIMATION           ",
+                        "                    ",
+                        "                    ",
+                        "                    ",
+                        "                    "
+                    ]
+                }
+            }
+        };
+
+        /* ============================================================
+           Token helper config (editor-only)
+           ✅ 3 groups, each can expand/collapse
+        ============================================================ */
+        const TOKEN_GROUPS = [
+            {
+                title: "Preset Tokens (recommended)",
+                defaultOpen: false, // ✅ collapsed by default (keeps page short)
+                items: [
+                    { token: "{LOCATION}", desc: "Resolved display location for this pack (from Weather Label)." },
+                    { token: "{TIME}", desc: "Weather timestamp (from OpenWeather data time), formatted by Flipboard." },
+                    { token: "{TEMP_LINE}", desc: "Temp display line (ex: 72° or 72° FEELS: 68°)." },
+                    { token: "{TEMP}", desc: "Just the current temperature (ex: 72°)." },
+                    { token: "{FEELS}", desc: "Just feels-like temperature (ex: 68°)." },
+                    { token: "{CONDITION_LINE}", desc: "Condition text (ex: MOSTLY CLOUDY)." },
+                    { token: "{WIND_LINE}", desc: "Wind display line (ex: WND: 7MPH)." }
+                ]
+            },
+            {
+                title: "Common JSON Paths (advanced)",
+                defaultOpen: false,
+                items: [
+                    { token: "{current.temp}", desc: "Current temperature (number)." },
+                    { token: "{current.feels_like}", desc: "Feels-like temperature (number)." },
+                    { token: "{current.wind_speed}", desc: "Wind speed (number)." },
+                    { token: "{current.humidity}", desc: "Humidity percent (number)." },
+                    { token: "{current.pressure}", desc: "Pressure (hPa) (number)." },
+                    { token: "{current.weather[0].main}", desc: "Weather main (ex: CLOUDS)." },
+                    { token: "{current.weather[0].description}", desc: "Weather description (ex: SCATTERED CLOUDS)." },
+                    { token: "{current.uvi}", desc: "UV index (number)." }
+                ]
+            },
+            {
+                title: "Daily / Forecast Paths (examples)",
+                defaultOpen: false,
+                items: [
+                    { token: "{daily[0].temp.max}", desc: "Today max temp." },
+                    { token: "{daily[0].temp.min}", desc: "Today min temp." },
+                    { token: "{daily[0].weather[0].main}", desc: "Today forecast main." },
+                    { token: "{daily[0].weather[0].description}", desc: "Today forecast description." },
+                    { token: "{daily[1].temp.max}", desc: "Tomorrow max temp." }
+                ]
+            }
+        ];
+
+        /* ============================================================
+           Create Board Modal (single modal, all options)
+        ============================================================ */
+        const createBoardOverlay = document.getElementById("createBoardOverlay");
+        const createBoardClose = document.getElementById("createBoardClose");
+        const cbKeyEl = document.getElementById("cbKey");
+        const cbNameEl = document.getElementById("cbName");
+
+        // const cbTypeEl = document.getElementById("cbType");
+        // const cbSourceWrapEl = document.getElementById("cbSourceWrap");
+        // const cbSourceEl = document.getElementById("cbSource");
+
+
+        const cbIsWeatherEl = document.getElementById("cbIsWeather");
+
+        const cbOneShotEl = document.getElementById("cbOneShot");
+        const cbAddToRotationEl = document.getElementById("cbAddToRotation");
+        const cbCancelBtn = document.getElementById("cbCancel");
+        const cbCreateBtn = document.getElementById("cbCreate");
+
+        function openCreateBoardModal() {
+            // Pre-fill sensible defaults
+            const keyDefault = nextKey(pack);
+            cbKeyEl.value = keyDefault;
+            cbNameEl.value = "New Board";
+            // cbTypeEl.value = "static";
+            // cbSourceEl.value = "";
+            // cbSourceWrapEl.style.display = "none";
+            cbIsWeatherEl.checked = false;
+
+            cbOneShotEl.checked = false;
+            cbAddToRotationEl.checked = true;
+            cbAddToRotationEl.disabled = false;
+
+            createBoardOverlay.classList.add("show");
+            createBoardOverlay.setAttribute("aria-hidden", "false");
+
+            setTimeout(() => cbKeyEl.focus(), 0);
         }
 
-        if (!snap.exists()) throw new Error("Firestore document flipboard/stagePack not found.");
-        const raw = snap.get(FIELD);
-        if (typeof raw !== "string" || !raw.trim()) {
-          throw new Error('Firestore field "data" missing or not a non-empty string.');
+        function closeCreateBoardModal() {
+            // If focus is inside the modal, move it out BEFORE hiding
+            if (createBoardOverlay.contains(document.activeElement)) {
+                document.activeElement.blur();
+                // send focus somewhere sensible in the main UI
+                setTimeout(() => btnAddBoard?.focus(), 0);
+            }
+
+            createBoardOverlay.classList.remove("show");
+            createBoardOverlay.setAttribute("aria-hidden", "true");
         }
-        return JSON.parse(raw);
-      };
-
-      window.saveStagePack = async function saveStagePack(pack) {
-        const json = JSON.stringify(pack, null, 2);
-
-        let nextVersion = 1;
-        try {
-          const snap = await getDoc(stagePackDocRef);
-          if (snap.exists()) {
-            const v = snap.get("version");
-            nextVersion = (typeof v === "number" && isFinite(v)) ? (v + 1) : 1;
-          }
-        } catch (_) {}
-
-        await setDoc(stagePackDocRef, {
-          [FIELD]: json,
-          version: nextVersion,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        return { version: nextVersion };
-      };
-
-      return true;
-    } catch (e) {
-      console.error("[EDITOR] Firebase init failed:", e);
-      window.__flipboardFirestoreError = e;
-      throw e;
-    }
-  })();
-</script>
-
-<script>
-/* ============================================================
-   Legacy GitHub fetch variables (still present; not used for Firestore)
-============================================================ */
-const USE_DUMMY_DATA = true;
-let GITHUB_OWNER = "";
-let GITHUB_REPO  = "";
-let GITHUB_BRANCH = "main";
-let GITHUB_FILE_PATH = "";
-let GITHUB_TOKEN = "";
-
-/* ============================================================
-   Dummy data (fallback)
-============================================================ */
-const DUMMY_STAGE_PACK = {
-  "meta": {
-    "grid": { "columns": 20, "rows": 8 },
-    "description": "Split-flap dashboard stage definitions"
-  },
-  "rotation": {
-    "enabled": true,
-    "dwell_ms": 15000,
-    "order": ["stage_1", "stage_2", "stage_3"]
-  },
-  "stages": {
-    "stage_1": {
-      "name": "Weather",
-      "type": "dynamic",
-      "source": "openweather_onecall",
-      "rows": [
-        "BOILING SPGS SC     ",
-        "{TEMP_LINE}         ",
-        "{CONDITION_LINE}    ",
-        "{WIND_LINE}         ",
-        "                    ",
-        "UPDATED: {TIME}     ",
-        "                    ",
-        "                    "
-      ]
-    },
-    "stage_2": {
-      "name": "Welcome Screen",
-      "type": "static",
-      "rows": [
-        "WELCOME             ",
-        "JAKE                ",
-        "SMART HOME DASHBOARD",
-        "                    ",
-        "SPLIT FLAP DISPLAY  ",
-        "                    ",
-        "                    ",
-        "                    "
-      ]
-    },
-    "stage_3": {
-      "name": "Today Schedule",
-      "type": "static",
-      "rows": [
-        "4:00 PM  TUTOR E    ",
-        "5-7 PM   BULLDOG    ",
-        "        BALL        ",
-        "7:30 PM  DINNER     ",
-        "9:00 PM  WIND DOWN  ",
-        "                    ",
-        "                    ",
-        "                    "
-      ]
-    },
-    "stage_demo": {
-      "name": "Demo Mode",
-      "type": "static",
-      "one_shot": true,
-      "rows": [
-        "DEMO MODE           ",
-        "STAGE TEST          ",
-        "SPLIT FLAP          ",
-        "ANIMATION           ",
-        "                    ",
-        "                    ",
-        "                    ",
-        "                    "
-      ]
-    }
-  }
-};
-
-/* ============================================================
-   Utilities
-============================================================ */
-const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
-const padRight = (s, n) => (String(s ?? "") + " ".repeat(n)).slice(0, n);
-const trimTo = (s, n) => String(s ?? "").slice(0, n);
-
-function toast(msg){
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  setTimeout(()=> el.classList.remove("show"), 1400);
-}
-
-function slugifyStageKey(s){
-  return (s || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/__+/g, "_");
-}
-
-function nextStageKey(stagePack){
-  let i = 1;
-  while(stagePack.stages[`stage_${i}`]) i++;
-  return `stage_${i}`;
-}
-
-function waitForGlobal(name, timeoutMs = 6000, pollMs = 50){
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    (function tick(){
-      if(window[name]) return resolve(window[name]);
-      if(Date.now() - start >= timeoutMs) return reject(new Error(`${name} not available after ${timeoutMs}ms`));
-      setTimeout(tick, pollMs);
-    })();
-  });
-}
-
-/* ============================================================
-   Legacy GitHub Fetch (Contents API) - optional
-============================================================ */
-async function loadStagePackFromGitHub(){
-  if(!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_FILE_PATH){
-    throw new Error("GitHub variables not set (OWNER/REPO/FILE_PATH).");
-  }
-
-  const url = `https://api.github.com/repos/${encodeURIComponent(GITHUB_OWNER)}/${encodeURIComponent(GITHUB_REPO)}/contents/${encodeURIComponent(GITHUB_FILE_PATH)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`;
-
-  const headers = { "Accept": "application/vnd.github+json" };
-  if(GITHUB_TOKEN){
-    headers["Authorization"] = `Bearer ${GITHUB_TOKEN}`;
-  }
-
-  const res = await fetch(url, { headers });
-  if(!res.ok){
-    const txt = await res.text().catch(()=> "");
-    throw new Error(`GitHub fetch failed: ${res.status} ${res.statusText} ${txt}`.trim());
-  }
-
-  const data = await res.json();
-  if(!data || !data.content) throw new Error("GitHub content response missing file content.");
-
-  const b64 = (data.content || "").replace(/\n/g, "");
-  const jsonText = atob(b64);
-  return JSON.parse(jsonText);
-}
-
-/* ============================================================
-   App State
-============================================================ */
-let stagePack = deepClone(DUMMY_STAGE_PACK);
-let stagePackSaved = deepClone(stagePack);
-
-let selectedStageKey = null;
-let editorDraft = null;
-let editorDraftSaved = null;
-
-function getCols(){ return stagePack?.meta?.grid?.columns ?? 20; }
-function getRows(){ return stagePack?.meta?.grid?.rows ?? 8; }
-
-/* ============================================================
-   DOM refs
-============================================================ */
-const rotationListEl = document.getElementById("rotationList");
-const otherListEl = document.getElementById("otherList");
-
-const rotationEnabledEl = document.getElementById("rotationEnabled");
-const rotationDwellEl = document.getElementById("rotationDwell");
-
-const gridColsEl = document.getElementById("gridCols");
-const gridRowsEl = document.getElementById("gridRows");
-const metaDescriptionEl = document.getElementById("metaDescription");
-
-const btnAddStage = document.getElementById("btnAddStage");
-const btnRemoveStage = document.getElementById("btnRemoveStage");
-const btnAddToRotation = document.getElementById("btnAddToRotation");
-const btnRemoveFromRotation = document.getElementById("btnRemoveFromRotation");
-
-const btnMoveUp = document.getElementById("btnMoveUp");
-const btnMoveDown = document.getElementById("btnMoveDown");
-
-const btnLoad = document.getElementById("btnLoad");
-const btnExport = document.getElementById("btnExport");
-
-const stageKeyEl = document.getElementById("stageKey");
-const stageNameEl = document.getElementById("stageName");
-const stageTypeEl = document.getElementById("stageType");
-const sourceWrapEl = document.getElementById("sourceWrap");
-const stageSourceEl = document.getElementById("stageSource");
-const stageOneShotEl = document.getElementById("stageOneShot");
-
-const rowsContainerEl = document.getElementById("rowsContainer");
-
-const btnSave = document.getElementById("btnSave");
-const btnCancel = document.getElementById("btnCancel");
-const btnPadAll = document.getElementById("btnPadAll");
-const btnTrimAll = document.getElementById("btnTrimAll");
-
-const colsValEl = document.getElementById("colsVal");
-const rowsValEl = document.getElementById("rowsVal");
-const dwellValEl = document.getElementById("dwellVal");
-const dirtyPillEl = document.getElementById("dirtyPill");
-const colsHintEl = document.getElementById("colsHint");
-const colsHint2El = document.getElementById("colsHint2");
-
-const sourceValEl = document.getElementById("sourceVal");
-const statusValEl = document.getElementById("statusVal");
-
-function setStatus(source, status, state){
-  if(sourceValEl) sourceValEl.textContent = source || "—";
-
-  if(statusValEl){
-    statusValEl.textContent = status || "—";
-
-    const pill = statusValEl.parentElement;
-    pill.classList.remove("ok","warn","err");
-
-    if(state === "ok")   pill.classList.add("ok");
-    if(state === "warn") pill.classList.add("warn");
-    if(state === "err")  pill.classList.add("err");
-  }
-}
-
-/* ============================================================
-   Dirty Tracking
-============================================================ */
-function packIsDirty(){
-  return JSON.stringify(stagePack) !== JSON.stringify(stagePackSaved);
-}
-function editorIsDirty(){
-  if(!editorDraft || !editorDraftSaved) return false;
-  return JSON.stringify(editorDraft) !== JSON.stringify(editorDraftSaved);
-}
-function updateDirtyUI(){
-  const dirty = packIsDirty() || editorIsDirty();
-  dirtyPillEl.style.display = dirty ? "inline-flex" : "none";
-}
-function setHeaderMeta(){
-  colsValEl.textContent = String(getCols());
-  rowsValEl.textContent = String(getRows());
-  dwellValEl.textContent = String(stagePack?.rotation?.dwell_ms ?? "—");
-  colsHintEl.textContent = String(getCols());
-  colsHint2El.textContent = String(getCols());
-}
-
-/* ============================================================
-   Lists
-============================================================ */
-function stageLabel(key){
-  const s = stagePack.stages[key];
-  const name = s?.name || "(unnamed)";
-  return { name, key };
-}
-
-function makeStageItem(key, inRotation){
-  const s = stagePack.stages[key];
-  const { name } = stageLabel(key);
-
-  const item = document.createElement("div");
-  item.className = "stageItem" + (key === selectedStageKey ? " selected" : "");
-  item.dataset.key = key;
-
-  if(inRotation) item.setAttribute("draggable", "true");
-
-  const top = document.createElement("div");
-  top.className = "stageTop";
-
-  const left = document.createElement("div");
-  const title = document.createElement("div");
-  title.className = "stageName";
-  title.textContent = name;
-
-  const sub = document.createElement("div");
-  sub.className = "stageKey";
-  sub.textContent = key;
-
-  left.appendChild(title);
-  left.appendChild(sub);
-
-  const badges = document.createElement("div");
-  badges.className = "badges";
-
-  const typeBadge = document.createElement("div");
-  typeBadge.className = "badge " + (s?.type === "dynamic" ? "dynamic" : "");
-  typeBadge.textContent = s?.type || "static";
-  badges.appendChild(typeBadge);
-
-  if(s?.one_shot){
-    const one = document.createElement("div");
-    one.className = "badge oneshot";
-    one.textContent = "one-shot";
-    badges.appendChild(one);
-  }
-
-  top.appendChild(left);
-  top.appendChild(badges);
-  item.appendChild(top);
-
-  item.addEventListener("click", () => attemptSelectStage(key));
-
-  if(inRotation){
-    item.addEventListener("dragstart", (e) => {
-      item.classList.add("dragging");
-      e.dataTransfer.setData("text/plain", key);
-      e.dataTransfer.effectAllowed = "move";
-    });
-    item.addEventListener("dragend", () => {
-      item.classList.remove("dragging");
-      [...rotationListEl.querySelectorAll(".dropTarget")].forEach(el => el.classList.remove("dropTarget"));
-    });
-    item.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      item.classList.add("dropTarget");
-      e.dataTransfer.dropEffect = "move";
-    });
-    item.addEventListener("dragleave", () => item.classList.remove("dropTarget"));
-    item.addEventListener("drop", (e) => {
-      e.preventDefault();
-      item.classList.remove("dropTarget");
-      const fromKey = e.dataTransfer.getData("text/plain");
-      const toKey = key;
-      if(!fromKey || fromKey === toKey) return;
-      reorderRotation(fromKey, toKey);
-    });
-  }
-
-  return item;
-}
-
-function renderLists(){
-  rotationListEl.innerHTML = "";
-  otherListEl.innerHTML = "";
-
-  const order = stagePack.rotation?.order ?? [];
-  const inRotation = new Set(order);
-
-  order.forEach(k => {
-    if(stagePack.stages[k]) rotationListEl.appendChild(makeStageItem(k, true));
-  });
-
-  Object.keys(stagePack.stages)
-    .filter(k => !inRotation.has(k))
-    .sort()
-    .forEach(k => otherListEl.appendChild(makeStageItem(k, false)));
-
-  btnRemoveStage.disabled = !selectedStageKey;
-  btnAddToRotation.disabled = !selectedStageKey || inRotation.has(selectedStageKey);
-  btnRemoveFromRotation.disabled = !selectedStageKey || !inRotation.has(selectedStageKey);
-
-  if(!selectedStageKey || !inRotation.has(selectedStageKey)){
-    btnMoveUp.disabled = true;
-    btnMoveDown.disabled = true;
-  }else{
-    const idx = order.indexOf(selectedStageKey);
-    btnMoveUp.disabled = idx <= 0;
-    btnMoveDown.disabled = idx < 0 || idx >= order.length - 1;
-  }
-
-  updateDirtyUI();
-}
-
-/* ============================================================
-   Rotation reorder
-============================================================ */
-function reorderRotation(fromKey, toKey){
-  const order = [...(stagePack.rotation?.order ?? [])];
-  const fromIdx = order.indexOf(fromKey);
-  const toIdx = order.indexOf(toKey);
-  if(fromIdx < 0 || toIdx < 0) return;
-
-  order.splice(fromIdx, 1);
-  order.splice(toIdx, 0, fromKey);
-  stagePack.rotation.order = order;
-
-  renderLists();
-  setHeaderMeta();
-  updateDirtyUI();
-  toast("Rotation order updated");
-}
-
-function moveSelectedInRotation(delta){
-  if(!selectedStageKey) return;
-
-  const order = [...(stagePack.rotation?.order ?? [])];
-  const idx = order.indexOf(selectedStageKey);
-  if(idx < 0) return;
-
-  const nextIdx = idx + delta;
-  if(nextIdx < 0 || nextIdx >= order.length) return;
-
-  const tmp = order[nextIdx];
-  order[nextIdx] = order[idx];
-  order[idx] = tmp;
-
-  stagePack.rotation.order = order;
-
-  renderLists();
-  setHeaderMeta();
-  updateDirtyUI();
-  toast(delta < 0 ? "Moved up" : "Moved down");
-}
-
-/* ============================================================
-   Editor select / dirty prompt
-============================================================ */
-function attemptSelectStage(key){
-  if(key === selectedStageKey) return;
-
-  if(editorIsDirty()){
-    const ok = confirm("You have unsaved changes for the current stage.\n\nOK = discard changes and switch stage.\nCancel = stay here.");
-    if(!ok) return;
-  }
-  selectStage(key);
-}
-
-function selectStage(key){
-  selectedStageKey = key;
-
-  const stage = stagePack.stages[key];
-  if(!stage){
-    clearEditor();
-    renderLists();
-    return;
-  }
-
-  editorDraft = deepClone(stage);
-
-  const r = getRows();
-  const c = getCols();
-
-  editorDraft.rows = Array.from({length:r}, (_,i) => {
-    const val = (editorDraft.rows && editorDraft.rows[i] != null) ? String(editorDraft.rows[i]) : "";
-    return padRight(val, c);
-  });
-
-  editorDraftSaved = deepClone(editorDraft);
-
-  stageKeyEl.value = key;
-  stageNameEl.value = editorDraft.name ?? "";
-  stageTypeEl.value = editorDraft.type ?? "static";
-  stageOneShotEl.checked = !!editorDraft.one_shot;
-
-  if((editorDraft.type ?? "static") === "dynamic"){
-    sourceWrapEl.style.display = "";
-    stageSourceEl.value = editorDraft.source ?? "";
-  }else{
-    sourceWrapEl.style.display = "none";
-    stageSourceEl.value = "";
-  }
-
-  renderRowsInputs();
-  renderLists();
-  setEditorButtons();
-}
-
-function clearEditor(){
-  selectedStageKey = null;
-  editorDraft = null;
-  editorDraftSaved = null;
-
-  stageKeyEl.value = "";
-  stageNameEl.value = "";
-  stageTypeEl.value = "static";
-  stageSourceEl.value = "";
-  stageOneShotEl.checked = false;
-  sourceWrapEl.style.display = "none";
-  rowsContainerEl.innerHTML = "";
-
-  setEditorButtons();
-}
-
-function setEditorButtons(){
-  const dirty = editorIsDirty();
-  btnSave.disabled = !selectedStageKey || !dirty;
-  btnCancel.disabled = !selectedStageKey || !dirty;
-  updateDirtyUI();
-}
-
-/* ============================================================
-   Row inputs
-============================================================ */
-function renderRowsInputs(){
-  rowsContainerEl.innerHTML = "";
-  const cols = getCols();
-  const rows = getRows();
-
-  for(let i=0;i<rows;i++){
-    const line = editorDraft.rows[i] ?? "";
-
-    const wrap = document.createElement("div");
-    wrap.className = "lineRow";
-
-    const lbl = document.createElement("div");
-    lbl.className = "lbl";
-    lbl.textContent = `ROW ${i+1}`;
-
-    const inp = document.createElement("input");
-    inp.type = "text";
-    inp.value = line;
-    inp.maxLength = cols;
-    inp.spellcheck = false;
-    inp.autocomplete = "off";
-
-    const count = document.createElement("div");
-    count.className = "count";
-    count.textContent = `${String(inp.value.length).padStart(2,"0")}/${cols}`;
-
-    inp.addEventListener("paste", (e) => {
-      const clip = (e.clipboardData || window.clipboardData).getData("text") || "";
-      const selStart = inp.selectionStart ?? inp.value.length;
-      const selEnd = inp.selectionEnd ?? inp.value.length;
-      const nextLen = (inp.value.length - (selEnd - selStart)) + clip.length;
-      if(nextLen > cols){
-        inp.classList.add("flashOver");
-        setTimeout(()=> inp.classList.remove("flashOver"), 350);
-      }
-    });
-
-    inp.addEventListener("input", () => {
-      editorDraft.rows[i] = inp.value;
-      count.textContent = `${String(inp.value.length).padStart(2,"0")}/${cols}`;
-      onDraftChanged();
-    });
-
-    inp.addEventListener("blur", () => {
-      const padded = padRight(inp.value, cols);
-      editorDraft.rows[i] = padded;
-      inp.value = padded;
-      count.textContent = `${String(inp.value.length).padStart(2,"0")}/${cols}`;
-      onDraftChanged();
-    });
-
-    wrap.appendChild(lbl);
-    wrap.appendChild(inp);
-    wrap.appendChild(count);
-    rowsContainerEl.appendChild(wrap);
-  }
-
-  stageNameEl.oninput = () => { editorDraft.name = stageNameEl.value; onDraftChanged(); };
-  stageTypeEl.onchange = () => {
-    editorDraft.type = stageTypeEl.value;
-    if(stageTypeEl.value === "dynamic"){
-      sourceWrapEl.style.display = "";
-      editorDraft.source = stageSourceEl.value || editorDraft.source || "";
-    }else{
-      sourceWrapEl.style.display = "none";
-      delete editorDraft.source;
-    }
-    onDraftChanged();
-  };
-  stageSourceEl.oninput = () => { editorDraft.source = stageSourceEl.value; onDraftChanged(); };
-  stageOneShotEl.onchange = () => { editorDraft.one_shot = !!stageOneShotEl.checked; onDraftChanged(); };
-}
-
-function onDraftChanged(){
-  setEditorButtons();
-  renderLists();
-}
-
-/* ============================================================
-   Save / Cancel stage edits
-============================================================ */
-function saveStageEdits(){
-  if(!selectedStageKey || !editorDraft) return;
-
-  const cols = getCols();
-  const rows = getRows();
-
-  const normalized = deepClone(editorDraft);
-  normalized.rows = Array.from({length:rows}, (_,i) => padRight(String(normalized.rows[i] ?? ""), cols));
-
-  if(!normalized.name || !String(normalized.name).trim()){
-    normalized.name = selectedStageKey;
-  }
-
-  if((normalized.type ?? "static") !== "dynamic"){
-    delete normalized.source;
-  }
-
-  stagePack.stages[selectedStageKey] = normalized;
-
-  editorDraft = deepClone(normalized);
-  editorDraftSaved = deepClone(normalized);
-
-  setEditorButtons();
-  renderLists();
-  setHeaderMeta();
-  toast("Stage saved");
-}
-
-function cancelStageEdits(){
-  if(!selectedStageKey || !editorDraftSaved) return;
-  editorDraft = deepClone(editorDraftSaved);
-  selectStage(selectedStageKey);
-  toast("Changes discarded");
-}
-
-/* ============================================================
-   Stage CRUD
-============================================================ */
-function addStage(){
-  if(editorIsDirty()){
-    const ok = confirm("You have unsaved changes.\n\nOK = discard them and add a stage.\nCancel = stay here.");
-    if(!ok) return;
-  }
-
-  const keyDefault = nextStageKey(stagePack);
-  const keyInput = prompt("New stage key (ID):", keyDefault);
-  if(keyInput === null) return;
-
-  const key = slugifyStageKey(keyInput) || keyDefault;
-  if(stagePack.stages[key]){
-    alert("That stage key already exists.");
-    return;
-  }
-
-  const name = prompt("Stage name (label shown in editor):", "New Stage") ?? "New Stage";
-  const typePrompt = (prompt("Stage type: static or dynamic", "static") ?? "static").toLowerCase();
-  const type = (typePrompt === "dynamic") ? "dynamic" : "static";
-
-  const cols = getCols();
-  const rows = getRows();
-  const rowsArr = Array.from({length:rows}, () => " ".repeat(cols));
-
-  const newStage = { name, type, rows: rowsArr };
-  if(type === "dynamic"){
-    newStage.source = prompt("Dynamic source:", "openweather_onecall") ?? "openweather_onecall";
-  }
-
-  stagePack.stages[key] = newStage;
-
-  const addToRot = confirm("Add this stage to rotation order?");
-  if(addToRot){
-    stagePack.rotation.order.push(key);
-  }
-
-  selectStage(key);
-  renderLists();
-  toast("Stage added");
-}
-
-function removeStage(){
-  if(!selectedStageKey) return;
-
-  const key = selectedStageKey;
-  const stageName = stagePack.stages[key]?.name || key;
-
-  const ok = confirm(`Delete stage "${stageName}" (${key})?\n\nThis cannot be undone.`);
-  if(!ok) return;
-
-  delete stagePack.stages[key];
-  stagePack.rotation.order = (stagePack.rotation.order || []).filter(k => k !== key);
-
-  clearEditor();
-  renderLists();
-  toast("Stage removed");
-}
-
-function addSelectedToRotation(){
-  if(!selectedStageKey) return;
-  const order = stagePack.rotation.order || [];
-  if(order.includes(selectedStageKey)) return;
-  order.push(selectedStageKey);
-  stagePack.rotation.order = order;
-  renderLists();
-  toast("Added to rotation");
-}
-
-function removeSelectedFromRotation(){
-  if(!selectedStageKey) return;
-  stagePack.rotation.order = (stagePack.rotation.order || []).filter(k => k !== selectedStageKey);
-  renderLists();
-  toast("Removed from rotation");
-}
-
-/* ============================================================
-   Global controls
-============================================================ */
-function bindRotationControls(){
-  rotationEnabledEl.onchange = () => {
-    stagePack.rotation.enabled = !!rotationEnabledEl.checked;
-    updateDirtyUI();
-  };
-  rotationDwellEl.oninput = () => {
-    stagePack.rotation.dwell_ms = Number(rotationDwellEl.value || 0);
-    dwellValEl.textContent = String(stagePack.rotation.dwell_ms);
-    updateDirtyUI();
-  };
-}
-
-function bindGlobalGridControls(){
-  gridColsEl.oninput = () => {
-    const v = Math.max(1, Math.min(120, Number(gridColsEl.value || 1)));
-    stagePack.meta.grid.columns = v;
-
-    for(const k of Object.keys(stagePack.stages)){
-      const st = stagePack.stages[k];
-      st.rows = (st.rows || []).map(r => padRight(String(r ?? ""), v));
-    }
-
-    setHeaderMeta();
-    if(selectedStageKey) selectStage(selectedStageKey);
-    renderLists();
-    updateDirtyUI();
-  };
-
-  gridRowsEl.oninput = () => {
-    const v = Math.max(1, Math.min(40, Number(gridRowsEl.value || 1)));
-    stagePack.meta.grid.rows = v;
-
-    const cols = getCols();
-    for(const k of Object.keys(stagePack.stages)){
-      const st = stagePack.stages[k];
-      const old = Array.isArray(st.rows) ? st.rows : [];
-      st.rows = Array.from({length:v}, (_,i) => padRight(String(old[i] ?? ""), cols));
-    }
-
-    setHeaderMeta();
-    if(selectedStageKey) selectStage(selectedStageKey);
-    renderLists();
-    updateDirtyUI();
-  };
-
-  metaDescriptionEl.oninput = () => {
-    stagePack.meta.description = metaDescriptionEl.value;
-    updateDirtyUI();
-  };
-}
-
-/* ============================================================
-   Pad / Trim helpers
-============================================================ */
-function padAllRows(){
-  if(!editorDraft) return;
-  const cols = getCols();
-  editorDraft.rows = editorDraft.rows.map(r => padRight(String(r ?? ""), cols));
-  selectStage(selectedStageKey);
-  toast("Rows padded");
-}
-function trimAllRows(){
-  if(!editorDraft) return;
-  const cols = getCols();
-  editorDraft.rows = editorDraft.rows.map(r => trimTo(String(r ?? ""), cols));
-  selectStage(selectedStageKey);
-  toast("Rows trimmed");
-}
-
-/* ============================================================
-   Export / Load (legacy)
-============================================================ */
-async function exportJSON(){
-  const cols = getCols();
-  const rows = getRows();
-
-  const out = deepClone(stagePack);
-  for(const k of Object.keys(out.stages)){
-    const st = out.stages[k];
-    st.name = st.name ?? k;
-    st.type = st.type ?? "static";
-    st.rows = Array.from({length:rows}, (_,i) => padRight(String((st.rows && st.rows[i]) ?? ""), cols));
-    if(st.type !== "dynamic") delete st.source;
-  }
-
-  const text = JSON.stringify(out, null, 2);
-  await navigator.clipboard.writeText(text);
-  toast("JSON copied to clipboard");
-}
-
-async function loadFromGitHubOrDummy(){
-  if(editorIsDirty()){
-    const ok = confirm("You have unsaved changes.\n\nOK = discard and load.\nCancel = stay here.");
-    if(!ok) return;
-  }
-
-  try{
-    const loaded = USE_DUMMY_DATA ? deepClone(DUMMY_STAGE_PACK) : await loadStagePackFromGitHub();
-    stagePack = loaded;
-    stagePackSaved = deepClone(loaded);
-
-    selectedStageKey = null;
-    editorDraft = null;
-    editorDraftSaved = null;
-
-    initFromStagePack();
-    setStatus(USE_DUMMY_DATA ? "dummy" : "github", "loaded via button", "warn");
-    toast(USE_DUMMY_DATA ? "Loaded dummy data" : "Loaded from GitHub");
-  }catch(err){
-    alert(String(err?.message || err));
-  }
-}
-
-/* ============================================================
-   Splitter resize
-============================================================ */
-(function enableSplitter(){
-  const app = document.getElementById("appSplit");
-  const splitter = document.getElementById("splitter");
-  if(!app || !splitter) return;
-
-  let dragging = false;
-
-  splitter.addEventListener("mousedown", () => {
-    dragging = true;
-    document.body.style.userSelect = "none";
-    document.body.style.cursor = "col-resize";
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if(!dragging) return;
-    const rect = app.getBoundingClientRect();
-    const minLeft = 240;
-    const maxLeft = 520;
-    let leftWidth = e.clientX - rect.left;
-    leftWidth = Math.max(minLeft, Math.min(maxLeft, leftWidth));
-    app.style.gridTemplateColumns = `${leftWidth}px 8px 1fr`;
-  });
-
-  window.addEventListener("mouseup", () => {
-    if(!dragging) return;
-    dragging = false;
-    document.body.style.userSelect = "";
-    document.body.style.cursor = "";
-  });
-})();
-
-/* ============================================================
-   Initialization
-============================================================ */
-function initFromStagePack(){
-  stagePack.meta ||= { grid: { columns: 20, rows: 8 } };
-  stagePack.meta.grid ||= { columns: 20, rows: 8 };
-  stagePack.rotation ||= { enabled:true, dwell_ms:15000, order:[] };
-  stagePack.rotation.order ||= [];
-  stagePack.stages ||= {};
-
-  rotationEnabledEl.checked = !!stagePack.rotation.enabled;
-  rotationDwellEl.value = stagePack.rotation.dwell_ms ?? 15000;
-
-  gridColsEl.value = getCols();
-  gridRowsEl.value = getRows();
-  metaDescriptionEl.value = stagePack?.meta?.description ?? "";
-
-  setHeaderMeta();
-  renderLists();
-
-  const first = (stagePack.rotation.order || []).find(k => stagePack.stages[k]);
-  if(first) selectStage(first);
-  else clearEditor();
-}
-
-/* ============================================================
-   Event wiring
-============================================================ */
-btnSave.addEventListener("click", async () => {
-  saveStageEdits();
-  try{
-    await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
-    await window.__flipboardFirestoreReady;
-
-    if(window.saveStagePack){
-      await window.saveStagePack(stagePack);
-      stagePackSaved = deepClone(stagePack);
-      updateDirtyUI();
-      setStatus(window.__flipboardLastSource || "firestore", "saved", "ok");
-      toast("Saved to Firestore");
-    }else{
-      throw new Error("saveStagePack() missing");
-    }
-  }catch(err){
-    setStatus("firestore", String(err?.message || err), "err");
-    alert(String(err?.message || err));
-  }
-});
-
-btnCancel.addEventListener("click", cancelStageEdits);
-
-btnAddStage.addEventListener("click", addStage);
-btnRemoveStage.addEventListener("click", removeStage);
-btnAddToRotation.addEventListener("click", addSelectedToRotation);
-btnRemoveFromRotation.addEventListener("click", removeSelectedFromRotation);
-
-btnMoveUp.addEventListener("click", () => moveSelectedInRotation(-1));
-btnMoveDown.addEventListener("click", () => moveSelectedInRotation(1));
-
-btnPadAll.addEventListener("click", padAllRows);
-btnTrimAll.addEventListener("click", trimAllRows);
-
-btnExport.addEventListener("click", exportJSON);
-btnLoad.addEventListener("click", loadFromGitHubOrDummy);
-
-bindRotationControls();
-bindGlobalGridControls();
-
-/* ============================================================
-   Firestore bootstrap
-============================================================ */
-(async () => {
-  setStatus("starting", "loading…", "warn");
-
-  try{
-    await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
-    await window.__flipboardFirestoreReady;
-
-    if(!window.loadStagePack){
-      setStatus("dummy", "loadStagePack() missing", "err");
-      stagePack = deepClone(DUMMY_STAGE_PACK);
-      stagePackSaved = deepClone(stagePack);
-      initFromStagePack();
-      toast("loadStagePack missing — using dummy");
-      return;
-    }
-
-    stagePack = await window.loadStagePack();
-    stagePackSaved = deepClone(stagePack);
-
-    selectedStageKey = null;
-    editorDraft = null;
-    editorDraftSaved = null;
-
-    initFromStagePack();
-
-    const src = window.__flipboardLastSource || "firestore";
-    setStatus(src, "loaded", src.includes("server") ? "ok" : "warn");
-    toast("Loaded from Firestore");
-
-  }catch(err){
-    const msg = String(err?.message || err);
-    console.error("Firestore bootstrap failed:", err);
-
-    setStatus("dummy", msg, "err");
-    stagePack = deepClone(DUMMY_STAGE_PACK);
-    stagePackSaved = deepClone(stagePack);
-    initFromStagePack();
-    toast("Firestore load failed — using dummy");
-  }
-})();
-</script>
+
+
+        // function updateCreateBoardUI() {
+        //     const isDynamic = cbTypeEl.value === "dynamic";
+        //     cbSourceWrapEl.style.display = isDynamic ? "" : "none";
+        //     if (!isDynamic) cbSourceEl.value = "";
+
+        //     // If one-shot, it can't be in rotation
+        //     if (cbOneShotEl.checked) {
+        //         cbAddToRotationEl.checked = false;
+        //         cbAddToRotationEl.disabled = true;
+        //     } else {
+        //         cbAddToRotationEl.disabled = false;
+        //     }
+        // }
+
+        // cbTypeEl.addEventListener("change", updateCreateBoardUI);
+        // cbOneShotEl.addEventListener("change", updateCreateBoardUI);
+        cbOneShotEl.addEventListener("change", () => {
+            if (cbOneShotEl.checked) {
+                cbAddToRotationEl.checked = false;
+                cbAddToRotationEl.disabled = true;
+            } else {
+                cbAddToRotationEl.disabled = false;
+            }
+        });
+
+
+        createBoardClose.addEventListener("click", closeCreateBoardModal);
+        cbCancelBtn.addEventListener("click", closeCreateBoardModal);
+
+        createBoardOverlay.addEventListener("click", (e) => {
+            if (e.target === createBoardOverlay) closeCreateBoardModal();
+        });
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && createBoardOverlay.classList.contains("show")) {
+                closeCreateBoardModal();
+            }
+        });
+
+        function createBoardFromModal1() {
+            // Normalize + validate key
+            const rawKey = cbKeyEl.value || "";
+            const keyDefault = nextKey(pack);
+            const key = slugifyKey(rawKey) || keyDefault;
+
+            if (pack.boards[key]) {
+                alert("That board key already exists. Pick a different key.");
+                cbKeyEl.focus();
+                return;
+            }
+
+            const name = (cbNameEl.value || "New Board").trim() || "New Board";
+            // const type = (cbTypeEl.value === "dynamic") ? "dynamic" : "static";
+            // const oneShot = !!cbOneShotEl.checked;
+            // const addToRotation = !!cbAddToRotationEl.checked && !oneShot;
+
+            // // Build rows to current grid size
+            const cols = getCols();
+            const rows = getRows();
+            const rowsArr = Array.from({ length: rows }, () => " ".repeat(cols));
+
+            // const newBoard = { name, type, rows: rowsArr };
+            // if (type === "dynamic") {
+            //     const src = (cbSourceEl.value || "").trim();
+            //     if (!src) {
+            //         alert("Pick a Dynamic Source for a dynamic board.");
+            //         cbSourceEl.focus();
+            //         return;
+            //     }
+            //     newBoard.source = src;
+            // }
+
+            const isWeather = !!cbIsWeatherEl.checked;
+            const type = isWeather ? "dynamic" : "static";
+
+            const newBoard = { name, type, rows: rowsArr };
+
+            if (isWeather) {
+                newBoard.source = "openweather_onecall";
+            }
+
+            if (oneShot) newBoard.one_shot = true;
+
+            pack.boards[key] = newBoard;
+
+            if (addToRotation) {
+                pack.rotation.order = pack.rotation.order || [];
+                pack.rotation.order.push(key);
+            }
+
+            closeCreateBoardModal();
+            selectBoard(key);
+            renderLists();
+            updateDirtyUI();
+            toast("Board created");
+        }
+        function createBoardFromModal() {
+            // Normalize + validate key
+            const rawKey = cbKeyEl.value || "";
+            const keyDefault = nextKey(pack);
+            const key = slugifyKey(rawKey) || keyDefault;
+
+            if (pack.boards[key]) {
+                alert("That board key already exists. Pick a different key.");
+                cbKeyEl.focus();
+                return;
+            }
+
+            const name = (cbNameEl.value || "New Board").trim() || "New Board";
+
+            const oneShot = !!cbOneShotEl.checked;
+            const addToRotation = !!cbAddToRotationEl.checked && !oneShot;
+
+            // ✅ Weather checkbox drives type/source
+            const isWeather = !!cbIsWeatherEl.checked;
+            const type = isWeather ? "dynamic" : "static";
+
+            // ✅ DEFINE rowsArr (this is what your error is about)
+            const cols = getCols();
+            const rows = getRows();
+            const rowsArr = Array.from({ length: rows }, () => " ".repeat(cols));
+
+            const newBoard = { name, type, rows: rowsArr };
+
+            if (isWeather) {
+                newBoard.source = "openweather_onecall";
+            }
+
+            if (oneShot) newBoard.one_shot = true;
+
+            pack.boards[key] = newBoard;
+
+            if (addToRotation) {
+                pack.rotation.order = pack.rotation.order || [];
+                pack.rotation.order.push(key);
+            }
+
+            closeCreateBoardModal();
+            selectBoard(key);
+            renderLists();
+            updateDirtyUI();
+            toast("Board created");
+        }
+
+        cbCreateBtn.addEventListener("click", createBoardFromModal);
+
+
+        /* ============================================================
+           Utilities
+        ============================================================ */
+        const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
+        const padRight = (s, n) => (String(s ?? "") + " ".repeat(n)).slice(0, n);
+        const trimTo = (s, n) => String(s ?? "").slice(0, n);
+
+        function toast(msg) {
+            const el = document.getElementById("toast");
+            el.textContent = msg;
+            el.classList.add("show");
+            setTimeout(() => el.classList.remove("show"), 1400);
+        }
+
+        function slugifyKey(s) {
+            return (s || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9_]+/g, "_")
+                .replace(/^_+|_+$/g, "")
+                .replace(/__+/g, "_");
+        }
+
+        function nextKey(pack) {
+            let i = 1;
+            while (pack.boards[`stage_${i}`]) i++;
+            return `stage_${i}`;
+        }
+
+        function waitForGlobal(name, timeoutMs = 8000, pollMs = 50) {
+            return new Promise((resolve, reject) => {
+                const start = Date.now();
+                (function tick() {
+                    if (window[name]) return resolve(window[name]);
+                    if (Date.now() - start >= timeoutMs) return reject(new Error(`${name} not available after ${timeoutMs}ms`));
+                    setTimeout(tick, pollMs);
+                })();
+            });
+        }
+
+        function upperKeepCursor(inputEl) {
+            const start = inputEl.selectionStart ?? inputEl.value.length;
+            const end = inputEl.selectionEnd ?? inputEl.value.length;
+            const next = String(inputEl.value ?? "").toUpperCase();
+            if (next !== inputEl.value) {
+                inputEl.value = next;
+                try { inputEl.setSelectionRange(start, end); } catch (_) { }
+            }
+        }
+
+        /* ============================================================
+           App State
+        ============================================================ */
+        let pack = deepClone(DUMMY_PACK);
+        let packSaved = deepClone(pack);
+
+        let selectedKey = null;
+        let draft = null;
+        let draftSaved = null;
+
+        function getCols() { return pack?.meta?.grid?.columns ?? 20; }
+        function getRows() { return pack?.meta?.grid?.rows ?? 8; }
+
+        /* ============================================================
+           DOM refs
+        ============================================================ */
+        const rotationListEl = document.getElementById("rotationList");
+        const otherListEl = document.getElementById("otherList");
+
+        const rotationEnabledEl = document.getElementById("rotationEnabled");
+        const rotationDwellEl = document.getElementById("rotationDwell");
+
+        const gridColsEl = document.getElementById("gridCols");
+        const gridRowsEl = document.getElementById("gridRows");
+        const metaDescriptionEl = document.getElementById("metaDescription");
+
+        const weatherTypeEl = document.getElementById("weatherType");
+        const weatherValueEl = document.getElementById("weatherValue");
+        const weatherLabelEl = document.getElementById("weatherLabel");
+
+        const btnAddBoard = document.getElementById("btnAddBoard");
+        const btnDeleteBoard = document.getElementById("btnDeleteBoard");
+        const btnAddToRotation = document.getElementById("btnAddToRotation");
+        const btnRemoveFromRotation = document.getElementById("btnRemoveFromRotation");
+        const btnMoveUp = document.getElementById("btnMoveUp");
+        const btnMoveDown = document.getElementById("btnMoveDown");
+
+        const btnSavePack = document.getElementById("btnSavePack");
+        const btnCopyJSON = document.getElementById("btnCopyJSON");
+        const btnReload = document.getElementById("btnReload");
+
+        const boardKeyEl = document.getElementById("boardKey");
+        const boardNameEl = document.getElementById("boardName");
+        const boardTypeEl = document.getElementById("boardType");
+        const sourceWrapEl = document.getElementById("sourceWrap");
+        const boardSourceEl = document.getElementById("boardSource");
+        const boardOneShotEl = document.getElementById("boardOneShot");
+
+        const rowsContainerEl = document.getElementById("rowsContainer");
+        const btnDiscardEdits = document.getElementById("btnDiscardEdits");
+        const btnPadAll = document.getElementById("btnPadAll");
+        const btnTrimAll = document.getElementById("btnTrimAll");
+
+        const colsValEl = document.getElementById("colsVal");
+        const rowsValEl = document.getElementById("rowsVal");
+        const dwellValEl = document.getElementById("dwellVal");
+        const dirtyPillEl = document.getElementById("dirtyPill");
+        const colsHintEl = document.getElementById("colsHint");
+        const colsHint2El = document.getElementById("colsHint2");
+
+        const sourceValEl = document.getElementById("sourceVal");
+        const statusValEl = document.getElementById("statusVal");
+
+        const helpListInlineEl = document.getElementById("helpListInline");
+        const helpListModalEl = document.getElementById("helpListModal");
+        const btnOpenTokenModal = document.getElementById("btnOpenTokenModal");
+        const btnCopyTokenDoc = document.getElementById("btnCopyTokenDoc");
+        const tokenModalOverlay = document.getElementById("tokenModalOverlay");
+        const tokenModalClose = document.getElementById("tokenModalClose");
+
+        function setStatus(source, status, state) {
+            if (sourceValEl) sourceValEl.textContent = source || "—";
+            if (statusValEl) {
+                statusValEl.textContent = status || "—";
+                const pill = statusValEl.parentElement;
+                pill.classList.remove("ok", "warn", "err");
+                if (state === "ok") pill.classList.add("ok");
+                if (state === "warn") pill.classList.add("warn");
+                if (state === "err") pill.classList.add("err");
+            }
+        }
+
+        /* ============================================================
+           Rotation sanitizer (keeps one-shot out of rotation)
+        ============================================================ */
+        function sanitizeRotation() {
+            pack.rotation ||= { enabled: true, dwell_ms: 15000, order: [] };
+            pack.rotation.order ||= [];
+
+            const order = pack.rotation.order.filter(k => {
+                const b = pack.boards?.[k];
+                if (!b) return false;
+                if (b.one_shot) return false;
+                return true;
+            });
+
+            pack.rotation.order = order;
+        }
+
+        /* ============================================================
+           Dirty Tracking
+        ============================================================ */
+        function packIsDirty() { return JSON.stringify(pack) !== JSON.stringify(packSaved); }
+        function editorIsDirty() {
+            if (!draft || !draftSaved) return false;
+            return JSON.stringify(draft) !== JSON.stringify(draftSaved);
+        }
+        function updateDirtyUI() {
+            const dirty = packIsDirty() || editorIsDirty();
+            dirtyPillEl.style.display = dirty ? "inline-flex" : "none";
+            btnSavePack.disabled = !dirty;
+            btnDiscardEdits.disabled = !editorIsDirty();
+        }
+        function setHeaderMeta() {
+            colsValEl.textContent = String(getCols());
+            rowsValEl.textContent = String(getRows());
+            dwellValEl.textContent = String(pack?.rotation?.dwell_ms ?? "—");
+            colsHintEl.textContent = String(getCols());
+            colsHint2El.textContent = String(getCols());
+        }
+
+        /* ============================================================
+           Token helper UI (✅ collapsible groups)
+        ============================================================ */
+        function makeHelpGroup(group) {
+            const g = document.createElement("div");
+            g.className = "helpGroup";
+
+            const head = document.createElement("div");
+            head.className = "helpGroupTitle";
+
+            const b = document.createElement("b");
+            b.textContent = group.title;
+
+            const toggle = document.createElement("div");
+            toggle.className = "helpToggle";
+            toggle.title = "Expand/collapse";
+            toggle.textContent = group.defaultOpen ? "▾" : "▸";
+
+            head.appendChild(b);
+            head.appendChild(toggle);
+            g.appendChild(head);
+
+            const body = document.createElement("div");
+            body.className = "helpGroupBody" + (group.defaultOpen ? "" : " collapsed");
+
+            for (const item of group.items) {
+                const row = document.createElement("div");
+                row.className = "helpItem";
+
+                const left = document.createElement("div");
+                const tok = document.createElement("div");
+                tok.className = "helpToken";
+                tok.textContent = item.token;
+                const desc = document.createElement("div");
+                desc.className = "helpDesc";
+                desc.textContent = item.desc;
+
+                left.appendChild(tok);
+                left.appendChild(desc);
+
+                const btn = document.createElement("button");
+                btn.className = "helpBtn";
+                btn.textContent = "Copy";
+                btn.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    await navigator.clipboard.writeText(item.token);
+                    toast(`Copied ${item.token}`);
+
+                    // ✅ Only auto-close when using the modal
+                    if (tokenModalOverlay.classList.contains("show")) {
+                        closeTokenModal(true);
+                    }
+                });
+
+                row.appendChild(left);
+                row.appendChild(btn);
+                body.appendChild(row);
+            }
+
+            g.appendChild(body);
+
+            const doToggle = () => {
+                const collapsed = body.classList.toggle("collapsed");
+                toggle.textContent = collapsed ? "▸" : "▾";
+            };
+
+            toggle.addEventListener("click", (e) => { e.preventDefault(); doToggle(); });
+            head.addEventListener("dblclick", (e) => { e.preventDefault(); doToggle(); });
+
+            return g;
+        }
+
+        function renderTokenHelpers() {
+            helpListInlineEl.innerHTML = "";
+            helpListModalEl.innerHTML = "";
+
+            TOKEN_GROUPS.forEach(g => {
+                helpListInlineEl.appendChild(makeHelpGroup(g));
+                helpListModalEl.appendChild(makeHelpGroup(g));
+            });
+        }
+
+        function openTokenModal() {
+            tokenModalOverlay.classList.add("show");
+            tokenModalOverlay.setAttribute("aria-hidden", "false");
+        }
+
+        function closeTokenModal(silent = false) {
+            tokenModalOverlay.classList.remove("show");
+            tokenModalOverlay.setAttribute("aria-hidden", "true");
+            if (!silent) toast("Closed");
+        }
+
+        async function copyQuickDoc() {
+            const docLines = [];
+            docLines.push("FLIPBOARD WEATHER TOKENS (EDITOR QUICK DOC)");
+            docLines.push("");
+            docLines.push("Use tokens inside curly braces in any row:");
+            docLines.push('  TEMP: {TEMP_LINE}');
+            docLines.push('  {CONDITION_LINE}  {WIND_LINE}');
+            docLines.push("");
+            docLines.push("Preset tokens:");
+            TOKEN_GROUPS[0].items.forEach(i => docLines.push(`  ${i.token}  -  ${i.desc}`));
+            docLines.push("");
+            docLines.push("JSON path tokens (advanced examples):");
+            TOKEN_GROUPS[1].items.slice(0, 6).forEach(i => docLines.push(`  ${i.token}`));
+            docLines.push("");
+            docLines.push("Notes:");
+            docLines.push("- Flipboard will uppercase + trim to column width.");
+            docLines.push("- Missing values should display -- / N/A.");
+
+            await navigator.clipboard.writeText(docLines.join("\n"));
+            toast("Quick doc copied");
+        }
+
+        /* ============================================================
+           Lists
+        ============================================================ */
+        function boardLabel(key) {
+            const b = pack.boards[key];
+            return { name: b?.name || "(unnamed)", key };
+        }
+
+        function makeItem(key, inRotation) {
+            const b = pack.boards[key];
+            const { name } = boardLabel(key);
+
+            const item = document.createElement("div");
+            item.className = "boardItem" + (key === selectedKey ? " selected" : "");
+            item.dataset.key = key;
+
+            if (inRotation) item.setAttribute("draggable", "true");
+
+            const top = document.createElement("div");
+            top.className = "boardTop";
+
+            const left = document.createElement("div");
+            const title = document.createElement("div");
+            title.className = "boardName";
+            title.textContent = name;
+
+            const sub = document.createElement("div");
+            sub.className = "boardKey";
+            sub.textContent = key;
+
+            left.appendChild(title);
+            left.appendChild(sub);
+
+            const badges = document.createElement("div");
+            badges.className = "badges";
+
+            const typeBadge = document.createElement("div");
+            typeBadge.className = "badge " + (b?.type === "dynamic" ? "dynamic" : "");
+            typeBadge.textContent = b?.type || "static";
+            badges.appendChild(typeBadge);
+
+            if (b?.one_shot) {
+                const one = document.createElement("div");
+                one.className = "badge oneshot";
+                one.textContent = "one-shot";
+                badges.appendChild(one);
+            }
+
+            top.appendChild(left);
+            top.appendChild(badges);
+            item.appendChild(top);
+
+            item.addEventListener("click", () => attemptSelect(key));
+
+            if (inRotation) {
+                item.addEventListener("dragstart", (e) => {
+                    item.classList.add("dragging");
+                    e.dataTransfer.setData("text/plain", key);
+                    e.dataTransfer.effectAllowed = "move";
+                });
+                item.addEventListener("dragend", () => {
+                    item.classList.remove("dragging");
+                    [...rotationListEl.querySelectorAll(".dropTarget")].forEach(el => el.classList.remove("dropTarget"));
+                });
+                item.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    item.classList.add("dropTarget");
+                    e.dataTransfer.dropEffect = "move";
+                });
+                item.addEventListener("dragleave", () => item.classList.remove("dropTarget"));
+                item.addEventListener("drop", (e) => {
+                    e.preventDefault();
+                    item.classList.remove("dropTarget");
+                    const fromKey = e.dataTransfer.getData("text/plain");
+                    const toKey = key;
+                    if (!fromKey || fromKey === toKey) return;
+                    reorderRotation(fromKey, toKey);
+                });
+            }
+
+            return item;
+        }
+
+        function renderLists() {
+            sanitizeRotation();
+
+            rotationListEl.innerHTML = "";
+            otherListEl.innerHTML = "";
+
+            const order = pack.rotation?.order ?? [];
+            const inRot = new Set(order);
+
+            order.forEach(k => {
+                const b = pack.boards[k];
+                if (!b || b.one_shot) return;
+                rotationListEl.appendChild(makeItem(k, true));
+            });
+
+            Object.keys(pack.boards)
+                .filter(k => !inRot.has(k))
+                .sort()
+                .forEach(k => otherListEl.appendChild(makeItem(k, false)));
+
+            btnDeleteBoard.disabled = !selectedKey;
+
+            const selectedBoard = selectedKey ? pack.boards[selectedKey] : null;
+            const selectedIsOneShot = !!selectedBoard?.one_shot;
+
+            btnAddToRotation.disabled = !selectedKey || inRot.has(selectedKey) || selectedIsOneShot;
+            btnRemoveFromRotation.disabled = !selectedKey || !inRot.has(selectedKey);
+
+            if (!selectedKey || !inRot.has(selectedKey) || selectedIsOneShot) {
+                btnMoveUp.disabled = true;
+                btnMoveDown.disabled = true;
+            } else {
+                const idx = order.indexOf(selectedKey);
+                btnMoveUp.disabled = idx <= 0;
+                btnMoveDown.disabled = idx < 0 || idx >= order.length - 1;
+            }
+
+            updateDirtyUI();
+        }
+
+        /* ============================================================
+           Rotation reorder / move
+        ============================================================ */
+        function reorderRotation(fromKey, toKey) {
+            const fromBoard = pack.boards[fromKey];
+            const toBoard = pack.boards[toKey];
+            if (fromBoard?.one_shot || toBoard?.one_shot) return;
+
+            const order = [...(pack.rotation?.order ?? [])];
+            const fromIdx = order.indexOf(fromKey);
+            const toIdx = order.indexOf(toKey);
+            if (fromIdx < 0 || toIdx < 0) return;
+
+            order.splice(fromIdx, 1);
+            order.splice(toIdx, 0, fromKey);
+            pack.rotation.order = order;
+
+            renderLists();
+            setHeaderMeta();
+            updateDirtyUI();
+            toast("Rotation order updated");
+        }
+
+        function moveSelectedInRotation(delta) {
+            if (!selectedKey) return;
+            const b = pack.boards[selectedKey];
+            if (b?.one_shot) return;
+
+            const order = [...(pack.rotation?.order ?? [])];
+            const idx = order.indexOf(selectedKey);
+            if (idx < 0) return;
+
+            const nextIdx = idx + delta;
+            if (nextIdx < 0 || nextIdx >= order.length) return;
+
+            const tmp = order[nextIdx];
+            order[nextIdx] = order[idx];
+            order[idx] = tmp;
+            pack.rotation.order = order;
+
+            renderLists();
+            setHeaderMeta();
+            updateDirtyUI();
+            toast(delta < 0 ? "Moved up" : "Moved down");
+        }
+
+        /* ============================================================
+           Editor select / discard prompt
+        ============================================================ */
+        function attemptSelect(key) {
+            if (key === selectedKey) return;
+
+            if (editorIsDirty()) {
+                const ok = confirm("You have unsaved edits for the current board.\n\nOK = discard edits and switch.\nCancel = stay here.");
+                if (!ok) return;
+            }
+            selectBoard(key);
+        }
+
+        function selectBoard(key) {
+            selectedKey = key;
+            const b = pack.boards[key];
+            if (!b) { clearEditor(); renderLists(); return; }
+
+            draft = deepClone(b);
+
+            const r = getRows();
+            const c = getCols();
+
+            draft.rows = Array.from({ length: r }, (_, i) => padRight(draft.rows?.[i] ?? "", c).toUpperCase());
+            draftSaved = deepClone(draft);
+
+            boardKeyEl.value = key;
+            boardNameEl.value = draft.name ?? "";
+            boardTypeEl.value = draft.type ?? "static";
+            boardOneShotEl.checked = !!draft.one_shot;
+
+            if ((draft.type ?? "static") === "dynamic") {
+                sourceWrapEl.style.display = "";
+                boardSourceEl.value = (draft.source ?? "");
+            } else {
+                sourceWrapEl.style.display = "none";
+                boardSourceEl.value = "";
+            }
+
+            renderRowInputs();
+            renderLists();
+            updateDirtyUI();
+        }
+
+        function clearEditor() {
+            selectedKey = null;
+            draft = null;
+            draftSaved = null;
+
+            boardKeyEl.value = "";
+            boardNameEl.value = "";
+            boardTypeEl.value = "static";
+            boardSourceEl.value = "";
+            boardOneShotEl.checked = false;
+            sourceWrapEl.style.display = "none";
+            rowsContainerEl.innerHTML = "";
+
+            updateDirtyUI();
+        }
+
+        /* ============================================================
+           Row inputs
+        ============================================================ */
+        function renderRowInputs() {
+            rowsContainerEl.innerHTML = "";
+            const cols = getCols();
+            const rows = getRows();
+
+            for (let i = 0; i < rows; i++) {
+                const line = draft.rows[i] ?? "";
+
+                const wrap = document.createElement("div");
+                wrap.className = "lineRow";
+
+                const lbl = document.createElement("div");
+                lbl.className = "lbl";
+                lbl.textContent = `ROW ${i + 1}`;
+
+                const inp = document.createElement("input");
+                inp.type = "text";
+                inp.value = String(line).toUpperCase();
+                inp.maxLength = cols;
+                inp.spellcheck = false;
+                inp.autocomplete = "off";
+
+                const count = document.createElement("div");
+                count.className = "count";
+                count.textContent = `${String(inp.value.length).padStart(2, "0")}/${cols}`;
+
+                inp.addEventListener("paste", (e) => {
+                    const clip = (e.clipboardData || window.clipboardData).getData("text") || "";
+                    const selStart = inp.selectionStart ?? inp.value.length;
+                    const selEnd = inp.selectionEnd ?? inp.value.length;
+                    const nextLen = (inp.value.length - (selEnd - selStart)) + clip.length;
+                    if (nextLen > cols) {
+                        inp.classList.add("flashOver");
+                        setTimeout(() => inp.classList.remove("flashOver"), 350);
+                    }
+                });
+
+                inp.addEventListener("input", () => {
+                    upperKeepCursor(inp);
+                    draft.rows[i] = inp.value;
+                    count.textContent = `${String(inp.value.length).padStart(2, "0")}/${cols}`;
+                    onDraftChanged();
+                });
+
+                inp.addEventListener("blur", () => {
+                    upperKeepCursor(inp);
+                    const padded = padRight(inp.value, cols).toUpperCase();
+                    draft.rows[i] = padded;
+                    inp.value = padded;
+                    count.textContent = `${String(inp.value.length).padStart(2, "0")}/${cols}`;
+                    onDraftChanged();
+                });
+
+                wrap.appendChild(lbl);
+                wrap.appendChild(inp);
+                wrap.appendChild(count);
+                rowsContainerEl.appendChild(wrap);
+            }
+
+            boardNameEl.oninput = () => {
+                draft.name = boardNameEl.value;
+                onDraftChanged();
+            };
+
+            boardTypeEl.onchange = () => {
+                draft.type = boardTypeEl.value;
+                if (boardTypeEl.value === "dynamic") {
+                    sourceWrapEl.style.display = "";
+                    draft.source = boardSourceEl.value || draft.source || "";
+                } else {
+                    sourceWrapEl.style.display = "none";
+                    delete draft.source;
+                }
+                onDraftChanged();
+            };
+
+            boardSourceEl.oninput = () => {
+                draft.source = boardSourceEl.value;
+                onDraftChanged();
+            };
+
+            boardOneShotEl.onchange = () => {
+                draft.one_shot = !!boardOneShotEl.checked;
+
+                if (selectedKey && draft.one_shot) {
+                    pack.rotation.order = (pack.rotation.order || []).filter(k => k !== selectedKey);
+                    toast("One-shot: removed from rotation");
+                }
+
+                onDraftChanged();
+            };
+        }
+
+        function onDraftChanged() {
+            if (selectedKey && draft) {
+                pack.boards[selectedKey] = deepClone(draft);
+            }
+            sanitizeRotation();
+            renderLists();
+            setHeaderMeta();
+            updateDirtyUI();
+        }
+
+        /* ============================================================
+           Discard editor edits
+        ============================================================ */
+        function discardEditorEdits() {
+            if (!selectedKey || !draftSaved) return;
+            draft = deepClone(draftSaved);
+            pack.boards[selectedKey] = deepClone(draftSaved);
+            selectBoard(selectedKey);
+            toast("Edits discarded");
+        }
+
+        /* ============================================================
+           Board CRUD
+        ============================================================ */
+        function addBoard() {
+            if (editorIsDirty()) {
+                const ok = confirm("You have unsaved edits.\n\nOK = discard edits and add a board.\nCancel = stay here.");
+                if (!ok) return;
+            }
+            openCreateBoardModal();
+        }
+
+        function deleteBoard() {
+            if (!selectedKey) return;
+
+            const key = selectedKey;
+            const boardName = pack.boards[key]?.name || key;
+
+            const ok = confirm(`Delete board "${boardName}" (${key})?\n\nThis cannot be undone.`);
+            if (!ok) return;
+
+            delete pack.boards[key];
+            pack.rotation.order = (pack.rotation.order || []).filter(k => k !== key);
+
+            clearEditor();
+            renderLists();
+            updateDirtyUI();
+            toast("Board deleted");
+        }
+
+        function addSelectedToRotation() {
+            if (!selectedKey) return;
+            const b = pack.boards[selectedKey];
+            if (b?.one_shot) {
+                toast("One-shot boards can't be in rotation");
+                return;
+            }
+
+            const order = pack.rotation.order || [];
+            if (order.includes(selectedKey)) return;
+            order.push(selectedKey);
+            pack.rotation.order = order;
+            renderLists();
+            updateDirtyUI();
+            toast("Added to rotation");
+        }
+
+        function removeSelectedFromRotation() {
+            if (!selectedKey) return;
+            pack.rotation.order = (pack.rotation.order || []).filter(k => k !== selectedKey);
+            renderLists();
+            updateDirtyUI();
+            toast("Removed from rotation");
+        }
+
+        /* ============================================================
+           Global controls
+        ============================================================ */
+        function bindRotationControls() {
+            rotationEnabledEl.onchange = () => {
+                pack.rotation.enabled = !!rotationEnabledEl.checked;
+                updateDirtyUI();
+            };
+            rotationDwellEl.oninput = () => {
+                pack.rotation.dwell_ms = Number(rotationDwellEl.value || 0);
+                dwellValEl.textContent = String(pack.rotation.dwell_ms);
+                updateDirtyUI();
+            };
+        }
+
+        function ensureWeatherShape() {
+            pack.meta ||= { grid: { columns: 20, rows: 8 }, description: "", weather: {} };
+            pack.meta.weather ||= {};
+            pack.meta.weather.location ||= { type: "city", value: "", label: "" };
+        }
+
+        function bindGlobalControls() {
+            gridColsEl.oninput = () => {
+                const v = Math.max(1, Math.min(120, Number(gridColsEl.value || 1)));
+                pack.meta.grid.columns = v;
+
+                for (const k of Object.keys(pack.boards)) {
+                    const b = pack.boards[k];
+                    b.rows = (b.rows || []).map(r => padRight(r, v).toUpperCase());
+                }
+
+                setHeaderMeta();
+                if (selectedKey) selectBoard(selectedKey);
+                renderLists();
+                updateDirtyUI();
+            };
+
+            gridRowsEl.oninput = () => {
+                const v = Math.max(1, Math.min(40, Number(gridRowsEl.value || 1)));
+                pack.meta.grid.rows = v;
+
+                const cols = getCols();
+                for (const k of Object.keys(pack.boards)) {
+                    const b = pack.boards[k];
+                    const old = Array.isArray(b.rows) ? b.rows : [];
+                    b.rows = Array.from({ length: v }, (_, i) => padRight(old[i] ?? "", cols).toUpperCase());
+                }
+
+                setHeaderMeta();
+                if (selectedKey) selectBoard(selectedKey);
+                renderLists();
+                updateDirtyUI();
+            };
+
+            metaDescriptionEl.oninput = () => {
+                pack.meta.description = metaDescriptionEl.value;
+                updateDirtyUI();
+            };
+
+            // Weather config (type/value/label)
+            weatherTypeEl.onchange = () => {
+                ensureWeatherShape();
+                pack.meta.weather.location.type = weatherTypeEl.value;
+                updateDirtyUI();
+            };
+
+            weatherValueEl.oninput = () => {
+                ensureWeatherShape();
+                pack.meta.weather.location.value = String(weatherValueEl.value || "").trim();
+                updateDirtyUI();
+            };
+
+            weatherLabelEl.oninput = () => {
+                ensureWeatherShape();
+                upperKeepCursor(weatherLabelEl);
+                pack.meta.weather.location.label = String(weatherLabelEl.value || "").toUpperCase();
+                updateDirtyUI();
+            };
+
+            weatherLabelEl.addEventListener("blur", () => {
+                ensureWeatherShape();
+                pack.meta.weather.location.label = String(weatherLabelEl.value || "").toUpperCase().trim();
+                weatherLabelEl.value = pack.meta.weather.location.label || "";
+                updateDirtyUI();
+            });
+        }
+
+        /* ============================================================
+           Pad / Trim helpers
+        ============================================================ */
+        function padAllRows() {
+            if (!draft) return;
+            const cols = getCols();
+            draft.rows = draft.rows.map(r => padRight(r, cols).toUpperCase());
+            onDraftChanged();
+            selectBoard(selectedKey);
+            toast("Rows padded");
+        }
+        function trimAllRows() {
+            if (!draft) return;
+            const cols = getCols();
+            draft.rows = draft.rows.map(r => trimTo(r, cols).toUpperCase());
+            onDraftChanged();
+            selectBoard(selectedKey);
+            toast("Rows trimmed");
+        }
+
+        /* ============================================================
+           Copy JSON
+        ============================================================ */
+        async function copyJSON() {
+            const cols = getCols();
+            const rows = getRows();
+
+            const out = deepClone(pack);
+            out.meta ||= { grid: { columns: cols, rows: rows }, description: "", weather: {} };
+            out.meta.grid ||= { columns: cols, rows: rows };
+            out.rotation ||= { enabled: true, dwell_ms: 15000, order: [] };
+            out.rotation.order ||= [];
+            out.boards ||= {};
+            ensureWeatherShape();
+
+            out.rotation.order = out.rotation.order.filter(k => {
+                const b = out.boards?.[k];
+                return !!b && !b.one_shot;
+            });
+
+            for (const k of Object.keys(out.boards)) {
+                const b = out.boards[k];
+                b.name = b.name ?? k;
+                b.type = b.type ?? "static";
+                b.rows = Array.from({ length: rows }, (_, i) => padRight((b.rows && b.rows[i]) ?? "", cols).toUpperCase());
+                if (b.type !== "dynamic") delete b.source;
+            }
+
+            const text = JSON.stringify(out, null, 2);
+            await navigator.clipboard.writeText(text);
+            toast("JSON copied");
+        }
+
+        /* ============================================================
+           Save pack (single Save button)
+        ============================================================ */
+        async function savePack() {
+            try {
+                await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
+                await window.__flipboardFirestoreReady;
+
+                if (selectedKey && draft) {
+                    pack.boards[selectedKey] = deepClone(draft);
+                }
+
+                sanitizeRotation();
+
+                if (!window.saveStagePack) throw new Error("saveStagePack() missing");
+                await window.saveStagePack(pack);
+
+                packSaved = deepClone(pack);
+
+                if (selectedKey && pack.boards[selectedKey]) {
+                    draftSaved = deepClone(pack.boards[selectedKey]);
+                }
+
+                const src = window.__flipboardLastSource || "firestore";
+                setStatus(src, "saved", "ok");
+                updateDirtyUI();
+                toast("Saved to Firestore");
+            } catch (err) {
+                setStatus("firestore", String(err?.message || err), "err");
+                alert(String(err?.message || err));
+            }
+        }
+
+        /* ============================================================
+           Reload pack (discard local changes)
+        ============================================================ */
+        async function reloadPack() {
+            if (packIsDirty() || editorIsDirty()) {
+                const ok = confirm("Reload from Firestore and discard local changes?\n\nOK = reload\nCancel = stay here.");
+                if (!ok) return;
+            }
+
+            try {
+                setStatus("firestore", "reloading…", "warn");
+                await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
+                await window.__flipboardFirestoreReady;
+
+                if (!window.loadStagePack) throw new Error("loadStagePack() missing");
+                pack = await window.loadStagePack();
+                packSaved = deepClone(pack);
+
+                selectedKey = null;
+                draft = null;
+                draftSaved = null;
+
+                initFromPack();
+
+                const src = window.__flipboardLastSource || "firestore";
+                setStatus(src, "loaded", src.includes("server") ? "ok" : "warn");
+                toast("Reloaded");
+            } catch (err) {
+                setStatus("firestore", String(err?.message || err), "err");
+                alert(String(err?.message || err));
+            }
+        }
+
+        /* ============================================================
+           Splitter resize
+        ============================================================ */
+        (function enableSplitter() {
+            const app = document.getElementById("appSplit");
+            const splitter = document.getElementById("splitter");
+            if (!app || !splitter) return;
+
+            let dragging = false;
+
+            splitter.addEventListener("mousedown", () => {
+                dragging = true;
+                document.body.style.userSelect = "none";
+                document.body.style.cursor = "col-resize";
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (!dragging) return;
+                const rect = app.getBoundingClientRect();
+                const minLeft = 240;
+                const maxLeft = 520;
+                let leftWidth = e.clientX - rect.left;
+                leftWidth = Math.max(minLeft, Math.min(maxLeft, leftWidth));
+                app.style.gridTemplateColumns = `${leftWidth}px 8px 1fr`;
+            });
+
+            window.addEventListener("mouseup", () => {
+                if (!dragging) return;
+                dragging = false;
+                document.body.style.userSelect = "";
+                document.body.style.cursor = "";
+            });
+        })();
+
+        /* ============================================================
+           Init from pack
+        ============================================================ */
+        function normalizePack(p) {
+            p ||= {};
+            p.meta ||= { grid: { columns: 20, rows: 8 }, description: "", weather: {} };
+            p.meta.grid ||= { columns: 20, rows: 8 };
+            p.rotation ||= { enabled: true, dwell_ms: 15000, order: [] };
+            p.rotation.order ||= [];
+
+            // if someone still has "stages", keep conservative: migrate to boards
+            if (!p.boards || typeof p.boards !== "object") p.boards = {};
+            if (Object.keys(p.boards).length === 0 && p.stages && typeof p.stages === "object") {
+                p.boards = deepClone(p.stages);
+            }
+
+            ensureWeatherShape();
+
+            return p;
+        }
+
+        function initFromPack() {
+            pack = normalizePack(pack);
+            sanitizeRotation();
+
+            rotationEnabledEl.checked = !!pack.rotation.enabled;
+            rotationDwellEl.value = pack.rotation.dwell_ms ?? 15000;
+
+            gridColsEl.value = getCols();
+            gridRowsEl.value = getRows();
+            metaDescriptionEl.value = pack.meta.description ?? "";
+
+            ensureWeatherShape();
+            weatherTypeEl.value = pack.meta.weather.location.type || "city";
+            weatherValueEl.value = pack.meta.weather.location.value || "";
+            weatherLabelEl.value = (pack.meta.weather.location.label || "").toUpperCase();
+
+            setHeaderMeta();
+            renderLists();
+
+            const first = (pack.rotation.order || []).find(k => pack.boards[k]) || Object.keys(pack.boards)[0];
+            if (first) selectBoard(first);
+            else clearEditor();
+
+            updateDirtyUI();
+        }
+
+        /* ============================================================
+           Events
+        ============================================================ */
+        btnAddBoard.addEventListener("click", addBoard);
+        btnDeleteBoard.addEventListener("click", deleteBoard);
+        btnAddToRotation.addEventListener("click", addSelectedToRotation);
+        btnRemoveFromRotation.addEventListener("click", removeSelectedFromRotation);
+        btnMoveUp.addEventListener("click", () => moveSelectedInRotation(-1));
+        btnMoveDown.addEventListener("click", () => moveSelectedInRotation(1));
+
+        btnDiscardEdits.addEventListener("click", discardEditorEdits);
+        btnPadAll.addEventListener("click", padAllRows);
+        btnTrimAll.addEventListener("click", trimAllRows);
+
+        btnCopyJSON.addEventListener("click", copyJSON);
+        btnSavePack.addEventListener("click", savePack);
+        btnReload.addEventListener("click", reloadPack);
+
+        bindRotationControls();
+        bindGlobalControls();
+
+        /* Token modal events */
+        btnOpenTokenModal.addEventListener("click", () => openTokenModal());
+        btnCopyTokenDoc.addEventListener("click", copyQuickDoc);
+
+        tokenModalClose.addEventListener("click", () => closeTokenModal(true));
+        tokenModalOverlay.addEventListener("click", (e) => {
+            if (e.target === tokenModalOverlay) closeTokenModal(true);
+        });
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && tokenModalOverlay.classList.contains("show")) {
+                closeTokenModal(true);
+            }
+        });
+
+        /* Render helpers immediately */
+        renderTokenHelpers();
+
+        /* ============================================================
+           Bootstrap: Firestore load
+        ============================================================ */
+        (async () => {
+            setStatus("starting", "loading…", "warn");
+
+            try {
+                await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
+                await window.__flipboardFirestoreReady;
+
+                if (!window.loadStagePack) {
+                    setStatus("dummy", "loadStagePack() missing", "err");
+                    pack = deepClone(DUMMY_PACK);
+                    packSaved = deepClone(pack);
+                    initFromPack();
+                    toast("loadStagePack missing — using dummy");
+                    return;
+                }
+
+                pack = await window.loadStagePack();
+                packSaved = deepClone(pack);
+
+                initFromPack();
+
+                const src = window.__flipboardLastSource || "firestore";
+                setStatus(src, "loaded", src.includes("server") ? "ok" : "warn");
+                toast("Loaded from Firestore");
+            } catch (err) {
+                const msg = String(err?.message || err);
+                console.error("Firestore bootstrap failed:", err);
+
+                setStatus("dummy", msg, "err");
+                pack = deepClone(DUMMY_PACK);
+                packSaved = deepClone(pack);
+                initFromPack();
+                toast("Firestore load failed — using dummy");
+            }
+        })();
+    </script>
+
+
+
 </body>
+
 </html>
