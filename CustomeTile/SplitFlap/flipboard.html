@@ -1,1036 +1,1397 @@
 <!doctype html>
 <html lang="en">
+<link rel="icon" type="image/png" sizes="32x32"
+    href="https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/SplitFlap/favicon.png">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Split-Flap Board (Sound + Weather + Firestore Stages + Live Updates)</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Split-Flap Board (Sound + Weather + Firestore + Tokens)</title>
 
-<style>
-:root{
-  --cols:20;
-  --rows:8;
+    <style>
+        :root {
+            --cols: 20;
+            --rows: 8;
 
-  --gap:10px;
-  --bg:#0b0c10;
-  --tile:#14161d;
-  --tileTop:#1a1d27;
-  --edge:rgba(255,255,255,.1);
-  --split:rgba(0,0,0,.55);
-  --splitHi:rgba(255,255,255,.08);
-  --text:#f3f4f6;
+            --gap: 10px;
+            --bg: #0b0c10;
+            --tile: #14161d;
+            --tileTop: #1a1d27;
+            --edge: rgba(255, 255, 255, .1);
+            --split: rgba(0, 0, 0, .55);
+            --splitHi: rgba(255, 255, 255, .08);
+            --text: #f3f4f6;
 
-  --flip-ms:140ms;
-  --persp:900px;
+            --flip-ms: 140ms;
+            --persp: 900px;
 
-  --ok:#4dd285;
-  --warn:#ffd27a;
-  --danger:#ff4d4d;
-}
+            --ok: #4dd285;
+            --warn: #ffd27a;
+            --danger: #ff4d4d;
+        }
 
-*{box-sizing:border-box}
-html,body{height:100%}
+        * {
+            box-sizing: border-box
+        }
 
-body{
-  margin:0;
-  min-height:100vh;
-  display:grid;
-  place-items:center;
-  background:radial-gradient(1200px 700px at 50% 30%,#111827 0%,var(--bg) 55%,#05060a 100%);
-  color:var(--text);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-}
+        html,
+        body {
+            height: 100%
+        }
 
-.wrap{
-  width:min(1600px,96vw);
-  max-width:100%;
-  padding:12px;
-  height:96vh;
-}
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(1200px 700px at 50% 30%, #111827 0%, var(--bg) 55%, #05060a 100%);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
 
-.boardShell{ width:100%; height:100%; }
+        .wrap {
+            width: min(1600px, 96vw);
+            max-width: 100%;
+            padding: 12px;
+            height: 96vh;
+        }
 
-.board{
-  display:grid;
-  grid-template-columns:repeat(var(--cols), 1fr);
-  grid-template-rows:repeat(var(--rows), 1fr);
-  gap:var(--gap);
-  background:rgba(0,0,0,.25);
-  box-shadow:0 20px 60px rgba(0,0,0,.55);
-  width:100%;
-  height:100%;
-  min-height:260px;
-  overflow:hidden;
-  border-radius:18px;
-  padding:14px;
-}
+        .boardShell {
+            width: 100%;
+            height: 100%;
+        }
 
-.tile{
-  position:relative;
-  background:linear-gradient(var(--tileTop),var(--tile));
-  border:1px solid var(--edge);
-  border-radius:12px;
-  perspective:var(--persp);
-  overflow:hidden;
-}
+        .board {
+            display: grid;
+            grid-template-columns: repeat(var(--cols), 1fr);
+            grid-template-rows: repeat(var(--rows), 1fr);
+            gap: var(--gap);
+            background: rgba(0, 0, 0, .25);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .55);
+            width: 100%;
+            height: 100%;
+            min-height: 260px;
+            overflow: hidden;
+            border-radius: 18px;
+            padding: 14px;
+        }
 
-.tile::after{
-  content:"";
-  position:absolute;
-  left:0;right:0;top:50%;
-  height:2px;
-  transform:translateY(-50%);
-  background:var(--split);
-  box-shadow:0 1px 0 var(--splitHi);
-  z-index:40;
-}
+        .tile {
+            position: relative;
+            background: linear-gradient(var(--tileTop), var(--tile));
+            border: 1px solid var(--edge);
+            border-radius: 12px;
+            perspective: var(--persp);
+            overflow: hidden;
+        }
 
-.half{
-  position:absolute;
-  left:0; right:0;
-  height:50%;
-  overflow:hidden;
-  display:block;
+        .tile::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 2px;
+            transform: translateY(-50%);
+            background: var(--split);
+            box-shadow: 0 1px 0 var(--splitHi);
+            z-index: 40;
+        }
 
-  font-weight:900;
-  font-size:clamp(14px, 2.2vw, 52px);
-  line-height:1;
-  letter-spacing:.02em;
-  text-shadow:0 2px 0 rgba(0,0,0,.6);
-  user-select:none;
-  backface-visibility:hidden;
-}
+        .half {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50%;
+            overflow: hidden;
+            display: block;
 
-.top.static{ top:0; z-index:10; }
-.bottom.static{ bottom:0; z-index:10; }
+            font-weight: 900;
+            font-size: clamp(14px, 2.2vw, 52px);
+            line-height: 1;
+            letter-spacing: .02em;
+            text-shadow: 0 2px 0 rgba(0, 0, 0, .6);
+            user-select: none;
+            backface-visibility: hidden;
+        }
 
-.half .glyphText{
-  position:absolute;
-  left:0; right:0;
-  top:0;
-  height:200%;
-  display:grid;
-  place-items:center;
-  transform:none;
-  line-height:1;
-}
-.bottom .glyphText{ top:-100%; }
+        .top.static {
+            top: 0;
+            z-index: 10;
+        }
 
-.flap{
-  position:absolute;
-  left:0; right:0;
-  height:50%;
-  overflow:hidden;
-  z-index:30;
-  backface-visibility:hidden;
-  transform-style:preserve-3d;
-}
+        .bottom.static {
+            bottom: 0;
+            z-index: 10;
+        }
 
-.flap.top{
-  top:0;
-  transform-origin:50% 100%;
-  transform:rotateX(0deg);
-  background:linear-gradient(rgba(255,255,255,.06),rgba(0,0,0,.10));
-}
+        .half .glyphText {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 200%;
+            display: grid;
+            place-items: center;
+            transform: none;
+            line-height: 1;
+        }
 
-.flap.bottom{
-  bottom:0;
-  transform-origin:50% 0%;
-  transform:rotateX(90deg);
-  background:linear-gradient(rgba(0,0,0,.18),rgba(255,255,255,.04));
-}
+        .bottom .glyphText {
+            top: -100%;
+        }
 
-.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
-.shown{ opacity:1; visibility:visible; pointer-events:none; }
+        .flap {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50%;
+            overflow: hidden;
+            z-index: 30;
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+        }
 
-.hud{
-  position:fixed;
-  top:10px;
-  left:10px;
-  right:10px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
-  pointer-events:none;
-  z-index:9999;
-}
+        .flap.top {
+            top: 0;
+            transform-origin: 50% 100%;
+            transform: rotateX(0deg);
+            background: linear-gradient(rgba(255, 255, 255, .06), rgba(0, 0, 0, .10));
+        }
 
-.pill{
-  pointer-events:none;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.35);
-  color:rgba(255,255,255,.85);
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:13px;
-  backdrop-filter: blur(6px);
-}
+        .flap.bottom {
+            bottom: 0;
+            transform-origin: 50% 0%;
+            transform: rotateX(90deg);
+            background: linear-gradient(rgba(0, 0, 0, .18), rgba(255, 255, 255, .04));
+        }
 
-.pill b{ color:#fff; }
+        .hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
 
-.pill.ok{
-  color:var(--ok);
-  border-color: rgba(77,210,133,.45);
-  background: rgba(77,210,133,.12);
-}
-.pill.warn{
-  color:var(--warn);
-  border-color: rgba(255,210,122,.45);
-  background: rgba(255,210,122,.12);
-}
-.pill.err{
-  color:var(--danger);
-  border-color: rgba(255,77,77,.45);
-  background: rgba(255,77,77,.12);
-}
-</style>
+        .shown {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: none;
+        }
+
+        .hud {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .pill {
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .35);
+            color: rgba(255, 255, 255, .85);
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+            backdrop-filter: blur(6px);
+        }
+
+        .pill b {
+            color: #fff;
+        }
+
+        .pill.ok {
+            color: var(--ok);
+            border-color: rgba(77, 210, 133, .45);
+            background: rgba(77, 210, 133, .12);
+        }
+
+        .pill.warn {
+            color: var(--warn);
+            border-color: rgba(255, 210, 122, .45);
+            background: rgba(255, 210, 122, .12);
+        }
+
+        .pill.err {
+            color: var(--danger);
+            border-color: rgba(255, 77, 77, .45);
+            background: rgba(255, 77, 77, .12);
+        }
+
+        /* DEBUG OFF hides HUD */
+        body.debug-off .hud {
+            display: none;
+        }
+
+        .debugHotspot {
+            position: absolute;
+            inset: 0;
+            z-index: 200;
+            background: transparent;
+            cursor: default;
+        }
+
+        .debugToast {
+            position: fixed;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: rgba(0, 0, 0, .85);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: .3px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease;
+            z-index: 10000;
+        }
+
+        .debugToast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
 </head>
 
 <body>
+    <div class="hud">
+        <div class="pill" id="pillSource"><b>Source:</b> <span id="sourceVal">—</span></div>
+        <div class="pill" id="pillStatus"><b>Status:</b> <span id="statusVal">—</span></div>
+        <div class="pill ok" id="pillGrid"><b>Grid:</b> <span id="gridVal">—</span></div>
+    </div>
 
-<div class="hud">
-  <div class="pill" id="pillSource"><b>Source:</b> <span id="sourceVal">—</span></div>
-  <div class="pill" id="pillStatus"><b>Status:</b> <span id="statusVal">—</span></div>
-  <div class="pill ok" id="pillGrid"><b>Grid:</b> <span id="gridVal">—</span></div>
-</div>
+    <div class="wrap">
+        <div class="boardShell">
+            <div id="board" class="board"></div>
+        </div>
+    </div>
 
-<div class="wrap">
-  <div class="boardShell">
-    <div id="board" class="board"></div>
-  </div>
-</div>
-
-<!-- ============================================================
+    <!-- ============================================================
      Firebase Firestore (Android WebView safe) + REALTIME listener
 ============================================================ -->
-<script type="module">
-  window.__flipboardFirestoreError = null;
+    <script type="module">
+        window.__flipboardFirestoreError = null;
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import {
-    initializeFirestore,
-    doc,
-    getDocFromServer,
-    getDocFromCache,
-    getDoc,
-    onSnapshot
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-  import {
-    getAuth,
-    signInAnonymously,
-    setPersistence,
-    browserLocalPersistence
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import {
+            initializeFirestore,
+            doc,
+            getDocFromServer,
+            getDocFromCache,
+            getDoc,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            setPersistence,
+            browserLocalPersistence
+        } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBMeYQiNcfhkFVtmbKAbDnFILfUz3nLY50",
-    authDomain: "flipboard-937e3.firebaseapp.com",
-    projectId: "flipboard-937e3",
-    storageBucket: "flipboard-937e3.firebasestorage.app",
-    messagingSenderId: "926200267004",
-    appId: "1:926200267004:web:1ee00c4d344f670b775779"
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMeYQiNcfhkFVtmbKAbDnFILfUz3nLY50",
+            authDomain: "flipboard-937e3.firebaseapp.com",
+            projectId: "flipboard-937e3",
+            storageBucket: "flipboard-937e3.firebasestorage.app",
+            messagingSenderId: "926200267004",
+            appId: "1:926200267004:web:1ee00c4d344f670b775779"
+        };
 
-  const COLLECTION = "flipboard";
-  const DOC_ID = "stagePack";
-  const FIELD = "data";
+        const COLLECTION = "flipboard";
+        const DOC_ID = "boardPack";
+        const FIELD = "data";
 
-  window.__flipboardFirestoreReady = (async () => {
-    try{
-      const app = initializeApp(firebaseConfig);
+        window.__flipboardFirestoreReady = (async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
 
-      // ✅ Android/webview transport fix
-      const db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        useFetchStreams: false
-      });
+                const db = initializeFirestore(app, {
+                    experimentalForceLongPolling: true,
+                    useFetchStreams: false
+                });
 
-      const auth = getAuth(app);
-      try { await setPersistence(auth, browserLocalPersistence); } catch(_) {}
-      await signInAnonymously(auth);
+                const auth = getAuth(app);
+                try { await setPersistence(auth, browserLocalPersistence); } catch (_) { }
+                await signInAnonymously(auth);
 
-      console.log("[FIRESTORE] AUTH UID:", auth.currentUser?.uid || "(none)");
+                console.log("[FIRESTORE] AUTH UID:", auth.currentUser?.uid || "(none)");
 
-      const ref = doc(db, COLLECTION, DOC_ID);
+                const ref = doc(db, COLLECTION, DOC_ID);
 
-      const parseDoc = (snap, label) => {
-        if (!snap.exists()) throw new Error(`Doc not found (${label}).`);
-        const raw = snap.get(FIELD);
-        if (typeof raw !== "string" || !raw.trim()) throw new Error(`Field "data" missing (${label}).`);
-        return JSON.parse(raw);
-      };
+                const parseDoc = (snap, label) => {
+                    if (!snap.exists()) throw new Error(`Doc not found (${label}).`);
+                    const raw = snap.get(FIELD);
+                    if (typeof raw !== "string" || !raw.trim()) throw new Error(`Field "data" missing (${label}).`);
+                    return JSON.parse(raw);
+                };
 
-      window.loadStagePack = async function loadStagePack(){
-        // 1) server
-        try{
-          const snap = await getDocFromServer(ref);
-          window.__flipboardLastSource = "firestore:server";
-          console.log("[FIRESTORE] got doc from SERVER");
-          return parseDoc(snap, "server");
-        }catch(e1){
-          console.warn("[FIRESTORE] server failed, trying CACHE:", e1?.code || e1?.message || e1);
+                window.loadBoardPack = async function loadBoardPack() {
+                    try {
+                        const snap = await getDocFromServer(ref);
+                        window.__flipboardLastSource = "firestore:server";
+                        return parseDoc(snap, "server");
+                    } catch (e1) {
+                        console.warn("[FIRESTORE] server failed, trying CACHE:", e1?.code || e1?.message || e1);
+                    }
+
+                    try {
+                        const snap = await getDocFromCache(ref);
+                        window.__flipboardLastSource = "firestore:cache";
+                        return parseDoc(snap, "cache");
+                    } catch (e2) {
+                        console.warn("[FIRESTORE] cache failed, trying DEFAULT:", e2?.code || e2?.message || e2);
+                    }
+
+                    const snap = await getDoc(ref);
+                    window.__flipboardLastSource = "firestore:default";
+                    return parseDoc(snap, "default");
+                };
+
+                window.subscribeBoardPack = function subscribeBoardPack(cb) {
+                    if (typeof cb !== "function") throw new Error("subscribeBoardPack(cb) requires a callback");
+
+                    const unsub = onSnapshot(ref, { includeMetadataChanges: true }, (snap) => {
+                        try {
+                            const fromCache = !!snap.metadata?.fromCache;
+                            const src = fromCache ? "firestore:realtime-cache" : "firestore:realtime-server";
+                            window.__flipboardLastSource = src;
+
+                            const pack = parseDoc(snap, src);
+                            cb(pack, src);
+                        } catch (err) {
+                            console.error("[FIRESTORE] snapshot parse error:", err);
+                        }
+                    }, (err) => {
+                        console.error("[FIRESTORE] onSnapshot error:", err);
+                    });
+
+                    return unsub;
+                };
+
+                return true;
+            } catch (e) {
+                window.__flipboardFirestoreError = e;
+                console.error("[FIRESTORE] init failed:", e);
+                throw e;
+            }
+        })();
+    </script>
+
+    <script>
+        /* ============================================================
+           GUARD — PREVENT DOUBLE BOOT
+        ============================================================ */
+        if (window.__FLIPBOARD_BOOTED) {
+            console.warn("[BOOT] already initialized, skipping duplicate boot");
+        } else {
+            window.__FLIPBOARD_BOOTED = true;
+
+            /* ============================================================
+               STATUS / PILLS
+            ============================================================ */
+            const pillSource = document.getElementById("pillSource");
+            const pillStatus = document.getElementById("pillStatus");
+            const sourceVal = document.getElementById("sourceVal");
+            const statusVal = document.getElementById("statusVal");
+            const gridVal = document.getElementById("gridVal");
+
+            function setPill(el, state) {
+                el.classList.remove("ok", "warn", "err");
+                if (state) el.classList.add(state);
+            }
+            function setStatus(source, status, state) {
+                sourceVal.textContent = source || "—";
+                statusVal.textContent = status || "—";
+                setPill(pillStatus, state || null);
+                setPill(pillSource, state || null);
+            }
+
+            /* ============================================================
+               DEBUG TOGGLE (tile 0 hold) — session-only, OFF by default
+            ============================================================ */
+            const DEBUG_KEY = "flipboard_debug_session";
+            let DEBUG_ENABLED = (sessionStorage.getItem(DEBUG_KEY) ?? "0") === "1";
+            let debugToastTimer = null;
+
+            function showDebugToast(msg, ms = 1400) {
+                let el = document.getElementById("debugToast");
+                if (!el) {
+                    el = document.createElement("div");
+                    el.id = "debugToast";
+                    el.className = "debugToast";
+                    document.body.appendChild(el);
+                }
+                el.textContent = msg;
+                el.classList.add("show");
+                if (debugToastTimer) clearTimeout(debugToastTimer);
+                debugToastTimer = setTimeout(() => el.classList.remove("show"), ms);
+            }
+
+            function applyDebugUI() {
+                document.body.classList.toggle("debug-off", !DEBUG_ENABLED);
+            }
+
+            function setDebugEnabled(next) {
+                DEBUG_ENABLED = !!next;
+                sessionStorage.setItem(DEBUG_KEY, DEBUG_ENABLED ? "1" : "0");
+                applyDebugUI();
+                showDebugToast(DEBUG_ENABLED ? "Debug ON" : "Debug OFF");
+            }
+
+            applyDebugUI();
+
+            /* ============================================================
+               OPENWEATHER CONFIG (display-side only)
+            ============================================================ */
+            const OWM_API_KEY = "1477cbdbd942d01b6e5b4eb630731226";
+            const OWM_UNITS = "imperial";
+            const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+            const DEFAULT_DWELL_MS = 15000;
+
+            /* ============================================================
+               CHARSET / HELPERS
+            ============================================================ */
+            const CHARSET =
+                " " +
+                "QZ&9_@A(1]H+Y°S}L/3\"J0T'X=U\\V?N{F%G$C)W8P;D,5R:6I-4M.2E7B!K©®™O#[";
+
+            const FLIP_MS = 140;
+            const STAGGER = 6;
+
+            const clamp = (s, n) => String(s ?? "").toUpperCase().slice(0, n).padEnd(n, " ");
+            const normalizeChar = c => CHARSET.includes(c) ? c : " ";
+            const delay = ms => new Promise(r => setTimeout(r, ms));
+            const randChar = () => CHARSET[Math.floor(Math.random() * CHARSET.length)];
+
+            function cleanText(s) {
+                return String(s ?? "")
+                    .replace(/[\r\n\t]+/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+            }
+
+            function cleanCond(s) {
+                return String(s ?? "")
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9 \-]/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+            }
+
+            function formatTimeFromUnix(unixSeconds, timezoneOffsetSeconds) {
+                if (typeof unixSeconds !== "number" || !isFinite(unixSeconds)) return "--";
+                const off = (typeof timezoneOffsetSeconds === "number" && isFinite(timezoneOffsetSeconds)) ? timezoneOffsetSeconds : 0;
+                const ms = (unixSeconds + off) * 1000;
+                const d = new Date(ms);
+
+                let h = d.getUTCHours();
+                const m = String(d.getUTCMinutes()).padStart(2, "0");
+                const ap = h >= 12 ? "P" : "A";
+                h = h % 12; if (h === 0) h = 12;
+                return `${h}:${m}${ap}`;
+            }
+
+            function roundInt(v) {
+                return (typeof v === "number" && isFinite(v)) ? Math.round(v) : null;
+            }
+
+            /* ============================================================
+               SAFE JSON PATH RESOLVER (no eval)
+            ============================================================ */
+            const PATH_OK = /^[A-Za-z0-9_\.\[\]]+$/;
+
+            function resolvePath(root, path) {
+                if (!path || typeof path !== "string") return { ok: false, value: null };
+                let p = path.trim();
+
+                if (p.startsWith("weather.")) p = p.slice("weather.".length);
+                if (!PATH_OK.test(p)) return { ok: false, value: null };
+
+                const tokens = [];
+                for (const seg of p.split(".")) {
+                    if (!seg) continue;
+
+                    if (/^\d+$/.test(seg)) {
+                        tokens.push(Number(seg));
+                        continue;
+                    }
+
+                    const m = seg.match(/^([A-Za-z0-9_]+)(.*)$/);
+                    if (!m) return { ok: false, value: null };
+                    tokens.push(m[1]);
+
+                    const rest = m[2] || "";
+                    if (rest) {
+                        const re = /\[(\d+)\]/g;
+                        let r;
+                        let consumed = "";
+                        while ((r = re.exec(rest)) !== null) {
+                            tokens.push(Number(r[1]));
+                            consumed += r[0];
+                        }
+                        if (consumed !== rest) return { ok: false, value: null };
+                    }
+                }
+
+                let cur = root;
+                for (const t of tokens) {
+                    if (cur == null) return { ok: false, value: null };
+                    if (typeof t === "number") {
+                        if (!Array.isArray(cur)) return { ok: false, value: null };
+                        cur = cur[t];
+                    } else {
+                        if (typeof cur !== "object") return { ok: false, value: null };
+                        cur = cur[t];
+                    }
+                }
+
+                if (cur == null) return { ok: false, value: null };
+                const type = typeof cur;
+                if (type === "string" || type === "number" || type === "boolean") return { ok: true, value: cur };
+                return { ok: false, value: null };
+            }
+
+            /* ============================================================
+               PRESET TOKEN ENGINE
+            ============================================================ */
+            function getWeatherConfig(pack) {
+                const w = pack?.meta?.weather;
+
+                // new spec: meta.weather.location = {type,value,label}
+                if (w && typeof w === "object" && w.location && typeof w.location === "object") {
+                    const type = String(w.location.type || "").toLowerCase();
+                    const value = String(w.location.value || "").trim();
+                    const label = String(w.location.label || "").trim();
+                    return {
+                        type: (type === "zip" || type === "city_state" || type === "city") ? type : "city",
+                        value,
+                        label
+                    };
+                }
+
+                // legacy: meta.weather.location = "BOILING SPRINGS, SC"
+                const legacy = (w && typeof w === "object") ? w.location : null;
+                if (typeof legacy === "string") {
+                    const v = legacy.trim();
+                    return { type: "city", value: v, label: v };
+                }
+
+                return { type: "city", value: "", label: "" };
+            }
+
+            function placeholderNumeric() { return "--"; }
+            function placeholderText() { return "N/A"; }
+
+            function presetTokens(payload, pack) {
+                const tzOff = payload?.timezone_offset;
+                const loc = getWeatherConfig(pack);
+                const label = cleanText(loc.label || loc.value || "").toUpperCase() || placeholderText();
+
+                const t = roundInt(payload?.current?.temp);
+                const f = roundInt(payload?.current?.feels_like);
+                const w = roundInt(payload?.current?.wind_speed);
+                const hum = (typeof payload?.current?.humidity === "number") ? Math.round(payload.current.humidity) : null;
+                const pres = (typeof payload?.current?.pressure === "number") ? Math.round(payload.current.pressure) : null;
+                const clouds = (typeof payload?.current?.clouds === "number") ? Math.round(payload.current.clouds) : null;
+                const uvi = (typeof payload?.current?.uvi === "number") ? payload.current.uvi : null;
+
+                const visM = (typeof payload?.current?.visibility === "number") ? payload.current.visibility : null;
+                const visMi = (visM != null) ? (visM / 1609.344) : null;
+
+                const condMain = payload?.current?.weather?.[0]?.main;
+                const condDesc = payload?.current?.weather?.[0]?.description;
+
+                const timeStr = formatTimeFromUnix(payload?.current?.dt, tzOff);
+
+                const TEMP = (t != null) ? `${t}°` : placeholderNumeric();
+                const FEELS = (f != null) ? `${f}°` : placeholderNumeric();
+
+                const showFeels = (t != null && f != null && Math.abs(f - t) >= 3);
+                const hot = (t != null && t >= 100) || (f != null && f >= 100);
+
+                let TEMP_LINE = placeholderNumeric();
+                if (t != null) {
+                    if (showFeels && f != null) TEMP_LINE = hot ? `${TEMP} FL ${FEELS}` : `${TEMP} FEELS: ${FEELS}`;
+                    else TEMP_LINE = TEMP;
+                }
+
+                const CONDITION = cleanCond(condMain) || placeholderText();
+                const CONDITION_LINE = cleanCond(condDesc || condMain) || placeholderText();
+
+                const WIND = (w != null) ? `${w}MPH` : placeholderNumeric();
+                const WIND_LINE = (w != null) ? `WND: ${WIND}` : `WND: ${placeholderNumeric()}`;
+
+                const HUMIDITY = (hum != null) ? `${hum}%` : placeholderNumeric();
+                const PRESSURE = (pres != null) ? `${pres}HPA` : placeholderNumeric();
+                const VISIBILITY = (visMi != null && isFinite(visMi)) ? `${visMi.toFixed(1)}MI` : placeholderNumeric();
+                const UV = (uvi != null && isFinite(uvi)) ? String(Math.round(uvi * 10) / 10) : placeholderNumeric();
+                const CLOUDS = (clouds != null) ? `${clouds}%` : placeholderNumeric();
+
+                const SUNRISE = formatTimeFromUnix(payload?.current?.sunrise, tzOff);
+                const SUNSET = formatTimeFromUnix(payload?.current?.sunset, tzOff);
+
+                return {
+                    LOCATION: label,
+                    TIME: timeStr || placeholderNumeric(),
+                    TEMP,
+                    FEELS,
+                    TEMP_LINE,
+                    CONDITION,
+                    CONDITION_LINE,
+                    WIND,
+                    WIND_LINE,
+                    HUMIDITY,
+                    PRESSURE,
+                    VISIBILITY,
+                    UV,
+                    CLOUDS,
+                    SUNRISE: SUNRISE || placeholderNumeric(),
+                    SUNSET: SUNSET || placeholderNumeric()
+                };
+            }
+
+            function tokenPlaceholderForTokenName(tokenName) {
+                const t = tokenName.toUpperCase();
+                if (t.includes("CONDITION") || t.includes("LOCATION") || t.includes("ALERT") || t.includes("DESCRIPTION")) return placeholderText();
+                return placeholderNumeric();
+            }
+
+            function stringifyResolved(v) {
+                const type = typeof v;
+                if (type === "number") return isFinite(v) ? String(v) : placeholderNumeric();
+                if (type === "boolean") return v ? "TRUE" : "FALSE";
+                if (type === "string") return cleanText(v);
+                return placeholderText();
+            }
+
+            function resolveToken(token, payload, pack) {
+                const raw = token.trim();
+                const presetKey = raw.toUpperCase();
+
+                const presets = presetTokens(payload, pack);
+                if (presetKey in presets) return String(presets[presetKey] ?? tokenPlaceholderForTokenName(presetKey));
+
+                const { ok, value } = resolvePath(payload, raw);
+                if (!ok) return tokenPlaceholderForTokenName(raw);
+                return stringifyResolved(value);
+            }
+
+            function renderRowWithTokens(row, payload, pack) {
+                const s = String(row ?? "");
+                return s.replace(/\{([^}]+)\}/g, (_, inner) => resolveToken(inner, payload, pack));
+            }
+
+            /* ============================================================
+               BOARD EPOCHS + TIMER CANCEL
+            ============================================================ */
+            let BOARD_EPOCH = 0;
+            let pendingTimers = [];
+            let ANIM_EPOCH = 0;
+
+            function bumpBoardEpoch() { BOARD_EPOCH++; }
+            function bumpAnimEpoch() { ANIM_EPOCH++; }
+
+            function clearPendingTimers() {
+                for (const id of pendingTimers) clearTimeout(id);
+                pendingTimers = [];
+            }
+            function cancelBoardWork() {
+                clearPendingTimers();
+                bumpBoardEpoch();
+                bumpAnimEpoch();
+            }
+
+            /* ============================================================
+               SOUND (Web Audio)
+            ============================================================ */
+            let SOUND_ENABLED = true;
+
+            const CLICK_URL =
+                "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/SplitFlap/Split-Flap.mp3";
+
+            let audioCtx = null;
+            let clickBuffer = null;
+            let soundReady = false;
+            let soundInitStarted = false;
+
+            function ensureAudioCtx() {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                return audioCtx;
+            }
+
+            async function initSound() {
+                if (!SOUND_ENABLED || soundInitStarted) return;
+                soundInitStarted = true;
+
+                try {
+                    const ctx = ensureAudioCtx();
+                    if (ctx.state === "suspended") await ctx.resume();
+
+                    const res = await fetch(CLICK_URL, { cache: "force-cache" });
+                    if (!res.ok) throw new Error(`Sound fetch failed: ${res.status} ${res.statusText}`);
+
+                    const buf = await res.arrayBuffer();
+                    clickBuffer = await ctx.decodeAudioData(buf.slice(0));
+                    soundReady = true;
+                    console.log("[SOUND] ready");
+                } catch (err) {
+                    console.error("[SOUND] init failed:", err);
+                    soundReady = false;
+                    clickBuffer = null;
+                }
+            }
+
+            async function autoEnableSound() {
+                if (!SOUND_ENABLED) return;
+                await initSound();
+                if (soundReady) playFlap("A", { force: true, volume: 0.06 });
+            }
+            window.addEventListener("pointerdown", autoEnableSound, { once: true });
+            window.addEventListener("keydown", autoEnableSound, { once: true });
+
+            const SOUND_MAX_PER_SEC = 18;
+            const SOUND_MIN_GAP_MS = Math.floor(1000 / SOUND_MAX_PER_SEC);
+            let lastSoundAt = 0;
+            let soundCarry = 0;
+
+            function shouldPlayClick() {
+                const now = performance.now();
+                const gap = now - lastSoundAt;
+                if (gap < SOUND_MIN_GAP_MS) return false;
+
+                soundCarry = Math.max(0, soundCarry - gap * 0.02);
+                const probability = Math.max(0.25, 1 - soundCarry * 0.06);
+                return Math.random() < probability;
+            }
+            function isAudibleChar(ch) { return ch !== " "; }
+
+            function playFlap(ch, opts = {}) {
+                if (!SOUND_ENABLED || !soundReady || !clickBuffer) return;
+
+                const force = !!opts.force;
+                const vol = typeof opts.volume === "number" ? opts.volume : 0.18;
+
+                if (!force) {
+                    if (!isAudibleChar(ch)) return;
+                    if (!shouldPlayClick()) return;
+                }
+
+                lastSoundAt = performance.now();
+                soundCarry += 1;
+
+                const ctx = ensureAudioCtx();
+                const src = ctx.createBufferSource();
+                src.buffer = clickBuffer;
+                src.playbackRate.value = 0.92 + Math.random() * 0.16;
+
+                const gain = ctx.createGain();
+                gain.gain.value = vol;
+
+                src.connect(gain).connect(ctx.destination);
+                src.start();
+            }
+
+            /* ============================================================
+               TILE (TRUE SPLIT-FLAP)
+            ============================================================ */
+            class Tile {
+                constructor(el) {
+                    this.el = el;
+
+                    this.topStatic = el.querySelector(".top.static .glyphText");
+                    this.botStatic = el.querySelector(".bottom.static .glyphText");
+
+                    this.topFlap = el.querySelector(".flap.top");
+                    this.botFlap = el.querySelector(".flap.bottom");
+
+                    this.topFlapText = el.querySelector(".flap.top .glyphText");
+                    this.botFlapText = el.querySelector(".flap.bottom .glyphText");
+
+                    this.current = " ";
+                    this.target = " ";
+                    this.running = false;
+
+                    this.resetFlaps();
+                }
+
+                resetFlaps() {
+                    this.topFlap.classList.remove("shown"); this.topFlap.classList.add("hidden");
+                    this.botFlap.classList.remove("shown"); this.botFlap.classList.add("hidden");
+
+                    this.topFlap.style.transition = "none";
+                    this.botFlap.style.transition = "none";
+                    this.topFlap.style.transform = "rotateX(0deg)";
+                    this.botFlap.style.transform = "rotateX(90deg)";
+                    void this.el.offsetWidth;
+                    this.topFlap.style.transition = `transform ${FLIP_MS}ms linear`;
+                    this.botFlap.style.transition = `transform ${FLIP_MS}ms linear`;
+                }
+
+                setInstant(c) {
+                    this.current = this.target = normalizeChar(c);
+                    this.topStatic.textContent = this.current;
+                    this.botStatic.textContent = this.current;
+                    this.resetFlaps();
+                }
+
+                setTarget(c) {
+                    this.target = normalizeChar(c);
+                    if (!this.running) this.run();
+                }
+
+                step(c) {
+                    return CHARSET[(CHARSET.indexOf(c) + 1) % CHARSET.length];
+                }
+
+                async run() {
+                    if (this.current === this.target) return;
+                    this.running = true;
+
+                    const myEpoch = ANIM_EPOCH;
+
+                    while (this.current !== this.target) {
+                        if (myEpoch !== ANIM_EPOCH) break;
+
+                        const next = this.step(this.current);
+                        await this.flipTo(next, myEpoch);
+
+                        if (myEpoch !== ANIM_EPOCH) break;
+                        this.current = next;
+                    }
+
+                    this.running = false;
+                }
+
+                async flipTo(next, myEpoch) {
+                    if (myEpoch !== ANIM_EPOCH) return;
+
+                    this.topFlapText.textContent = this.current;
+                    this.botFlapText.textContent = next;
+
+                    this.topFlap.classList.remove("hidden"); this.topFlap.classList.add("shown");
+                    this.botFlap.classList.remove("hidden"); this.botFlap.classList.add("shown");
+
+                    this.topFlap.style.transition = "none";
+                    this.botFlap.style.transition = "none";
+                    this.topFlap.style.transform = "rotateX(0deg)";
+                    this.botFlap.style.transform = "rotateX(90deg)";
+                    void this.el.offsetWidth;
+                    this.topFlap.style.transition = `transform ${FLIP_MS}ms linear`;
+                    this.botFlap.style.transition = `transform ${FLIP_MS}ms linear`;
+
+                    this.topFlap.style.transform = "rotateX(-90deg)";
+                    this.botFlap.style.transform = "rotateX(0deg)";
+
+                    playFlap(next);
+
+                    await delay(FLIP_MS / 2);
+                    if (myEpoch !== ANIM_EPOCH) return;
+
+                    this.topStatic.textContent = next;
+                    this.botStatic.textContent = next;
+
+                    await delay(FLIP_MS / 2);
+                    if (myEpoch !== ANIM_EPOCH) return;
+
+                    this.resetFlaps();
+                }
+            }
+
+            /* ============================================================
+               BUILD / REBUILD BOARD
+            ============================================================ */
+            const board = document.getElementById("board");
+            let tiles = [];
+            let COLS = 20;
+            let ROWS = 8;
+
+            function applyGrid(cols, rows) {
+                COLS = cols;
+                ROWS = rows;
+                document.documentElement.style.setProperty("--cols", COLS);
+                document.documentElement.style.setProperty("--rows", ROWS);
+                gridVal.textContent = `${COLS}×${ROWS}`;
+            }
+
+            function buildBoard(cols, rows) {
+                applyGrid(cols, rows);
+
+                board.innerHTML = "";
+                tiles = [];
+
+                for (let i = 0; i < COLS * ROWS; i++) {
+                    const tile = document.createElement("div");
+                    tile.className = "tile";
+                    tile.innerHTML = `
+            <div class="half top static"><span class="glyphText"> </span></div>
+            <div class="half bottom static"><span class="glyphText"> </span></div>
+    
+            <div class="flap top hidden">
+              <div class="half top" style="position:relative;height:100%;">
+                <span class="glyphText"> </span>
+              </div>
+            </div>
+    
+            <div class="flap bottom hidden">
+              <div class="half bottom" style="position:relative;height:100%;">
+                <span class="glyphText"> </span>
+              </div>
+            </div>
+          `;
+                    board.appendChild(tile);
+
+                    // Debug toggle hotspot on TILE 0
+                    if (i === 0) {
+                        const hotspot = document.createElement("div");
+                        hotspot.className = "debugHotspot";
+                        hotspot.title = "Hold to toggle debug";
+
+                        let hintTimer = null;
+                        let toggleTimer = null;
+
+                        const HINT_MS = 300;
+                        const TOGGLE_MS = 900;
+
+                        const startHold = (e) => {
+                            e.preventDefault();
+
+                            hintTimer = setTimeout(() => {
+                                showDebugToast("Keep holding to toggle debug…", 1200);
+                            }, HINT_MS);
+
+                            toggleTimer = setTimeout(() => {
+                                toggleTimer = null;
+                                setDebugEnabled(!DEBUG_ENABLED);
+                            }, TOGGLE_MS);
+                        };
+
+                        const cancelHold = () => {
+                            if (hintTimer) clearTimeout(hintTimer);
+                            if (toggleTimer) clearTimeout(toggleTimer);
+                            hintTimer = null;
+                            toggleTimer = null;
+                        };
+
+                        hotspot.addEventListener("pointerdown", startHold, { passive: false });
+                        hotspot.addEventListener("pointerup", cancelHold);
+                        hotspot.addEventListener("pointerleave", cancelHold);
+                        hotspot.addEventListener("pointercancel", cancelHold);
+
+                        tile.appendChild(hotspot);
+                    }
+
+                    const t = new Tile(tile);
+                    t.setInstant(" ");
+                    tiles.push(t);
+                }
+            }
+
+            /* ============================================================
+               DISPLAY API
+            ============================================================ */
+            function asRows(lines) {
+                const arr = Array.isArray(lines) ? lines : [];
+                return Array.from({ length: ROWS }, (_, i) => clamp(arr[i] ?? "", COLS));
+            }
+
+            function setLines(lines) {
+                const epoch = BOARD_EPOCH;
+                const padded = asRows(lines);
+                const flat = padded.join("").split("");
+
+                flat.forEach((c, i) => {
+                    const id = setTimeout(() => {
+                        if (epoch !== BOARD_EPOCH) return;
+                        tiles[i]?.setTarget(c);
+                    }, i * STAGGER);
+                    pendingTimers.push(id);
+                });
+            }
+
+            function waitForAllTiles() {
+                return new Promise(resolve => {
+                    const check = () => {
+                        if (tiles.every(t => !t.running)) resolve();
+                        else requestAnimationFrame(check);
+                    };
+                    check();
+                });
+            }
+
+            async function setLinesAndWait(lines) {
+                clearPendingTimers();
+                setLines(lines);
+                await waitForAllTiles();
+            }
+
+            function boot(lines) {
+                cancelBoardWork();
+                tiles.forEach(t => t.setInstant(randChar()));
+                const id = setTimeout(() => setLines(lines), 60);
+                pendingTimers.push(id);
+            }
+
+            /* ============================================================
+               WEATHER (per device) + GEOCODE (City / City,State / ZIP)
+            ============================================================ */
+            let lastWeatherPayload = null;
+            let weatherRefreshTimer = null;
+
+            let geoCache = { key: "", lat: null, lon: null, at: 0 };
+
+            function normalizeLocationKey(loc) {
+                return cleanText(loc || "").toUpperCase();
+            }
+
+            function needsGeocodeRefresh(locKey) {
+                if (!locKey) return true;
+                if (geoCache.key !== locKey) return true;
+                const age = Date.now() - (geoCache.at || 0);
+                return age > (24 * 60 * 60 * 1000);
+            }
+
+            async function geocodeLocation(pack) {
+                const cfg = getWeatherConfig(pack);
+                const value = cleanText(cfg.value || "");
+                const locKey = normalizeLocationKey(cfg.type + ":" + value);
+
+                if (!value) return null;
+
+                if (!needsGeocodeRefresh(locKey) && geoCache.lat != null && geoCache.lon != null) {
+                    return { lat: geoCache.lat, lon: geoCache.lon };
+                }
+
+                if (!OWM_API_KEY || OWM_API_KEY.includes("PUT_YOUR")) {
+                    throw new Error("OWM API key not set");
+                }
+
+                let lat = null, lon = null;
+
+                if (cfg.type === "zip") {
+                    const zip = value.replace(/[^0-9]/g, "");
+                    const url = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(zip)},US&appid=${encodeURIComponent(OWM_API_KEY)}`;
+                    const res = await fetch(url, { cache: "no-store" });
+                    if (!res.ok) throw new Error(`Geo ZIP failed: ${res.status}`);
+                    const j = await res.json();
+                    lat = j?.lat; lon = j?.lon;
+                } else {
+                    const q = value;
+                    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${encodeURIComponent(OWM_API_KEY)}`;
+                    const res = await fetch(url, { cache: "no-store" });
+                    if (!res.ok) throw new Error(`Geo direct failed: ${res.status}`);
+                    const arr = await res.json();
+                    lat = arr?.[0]?.lat; lon = arr?.[0]?.lon;
+                }
+
+                if (typeof lat !== "number" || typeof lon !== "number") {
+                    throw new Error("Could not resolve location to lat/lon");
+                }
+
+                geoCache = { key: locKey, lat, lon, at: Date.now() };
+                return { lat, lon };
+            }
+
+            async function fetchWeatherForPack(pack) {
+                const geo = await geocodeLocation(pack);
+                if (!geo) return null;
+                const { lat, lon } = geo;
+
+                const url =
+                    `https://api.openweathermap.org/data/3.0/onecall?` +
+                    `lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}` +
+                    `&exclude=minutely,hourly&appid=${encodeURIComponent(OWM_API_KEY)}` +
+                    `&units=${encodeURIComponent(OWM_UNITS)}`;
+
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) throw new Error(`Weather fetch failed: ${res.status} ${res.statusText}`);
+                const json = await res.json();
+                lastWeatherPayload = json;
+                return json;
+            }
+
+            function stopWeatherRefresh() {
+                if (weatherRefreshTimer) clearTimeout(weatherRefreshTimer);
+                weatherRefreshTimer = null;
+            }
+
+            function packNeedsWeather(pack) {
+                const boards = pack?.boards || {};
+                return Object.values(boards).some(st => (st?.type === "dynamic" && st?.source === "openweather_onecall"));
+            }
+
+            function startWeatherRefresh() {
+                stopWeatherRefresh();
+
+                const loop = async () => {
+                    try {
+                        const w = await fetchWeatherForPack(boardPack);
+                        if (!w) return;
+                        if (DEBUG_ENABLED) console.log("[WEATHER] fetched ok");
+                    } catch (e) {
+                        console.warn("[WEATHER] fetch failed:", e);
+                    }
+                    weatherRefreshTimer = setTimeout(loop, WEATHER_REFRESH_MS);
+                };
+
+                loop();
+            }
+
+            /* ============================================================
+               BOARD PACK (schema = meta + rotation + boards)
+            ============================================================ */
+            const FALLBACK_STAGE_PACK = {
+                meta: { grid: { columns: 20, rows: 8 }, description: "Fallback", weather: { location: "" } },
+                rotation: { enabled: true, dwell_ms: 15000, order: ["stage_1", "stage_2"] },
+                boards: {
+                    stage_1: { name: "Welcome", type: "static", rows: ["WELCOME", "JAKE", "SMART HOME DASHBOARD", "", "SPLIT FLAP DISPLAY", "", "", ""] },
+                    stage_2: {
+                        name: "Weather", type: "dynamic", source: "openweather_onecall",
+                        rows: ["{LOCATION}", "{TEMP_LINE}", "{CONDITION_LINE}  {WIND_LINE}", "", "UPDATED: {TIME}", "", "", ""]
+                    }
+                }
+            };
+
+            let boardPack = JSON.parse(JSON.stringify(FALLBACK_STAGE_PACK));
+            let lastBoardPackJSON = "";
+
+            function normalizeBoardPack(pack) {
+                const p = (pack && typeof pack === "object") ? pack : {};
+
+                p.meta ||= {};
+                p.meta.grid ||= { columns: 20, rows: 8 };
+                p.meta.description ||= "";
+                p.meta.weather ||= {};
+                // meta.weather.location can be a string (legacy) or an object {type,value,label}
+
+                p.rotation ||= {};
+                if (typeof p.rotation.enabled !== "boolean") p.rotation.enabled = true;
+                if (typeof p.rotation.dwell_ms !== "number") p.rotation.dwell_ms = DEFAULT_DWELL_MS;
+                if (!Array.isArray(p.rotation.order)) p.rotation.order = [];
+
+                // boards container is required by your display code
+                p.boards ||= {};
+
+                return p;
+            }
+
+
+            /* ============================================================
+               ROTATION
+            ============================================================ */
+            let rotateEnabled = true;
+            let rotateRunId = 0;
+            let rotateTimer = null;
+
+            function stopRotation() {
+                rotateEnabled = false;
+                if (rotateTimer) clearTimeout(rotateTimer);
+                rotateTimer = null;
+                rotateRunId++;
+            }
+
+            function getRotationKeys(pack) {
+                const boards = pack?.boards || {};
+                const isValidRotateBoard = (key) => {
+                    const st = boards[key];
+                    if (!st) return false;
+                    if (st.one_shot) return false;
+                    return true;
+                };
+
+                const order = Array.isArray(pack?.rotation?.order) ? pack.rotation.order : [];
+                const cleaned = order.filter(isValidRotateBoard);
+
+                if (cleaned.length) return cleaned;
+                return Object.keys(boards).filter(isValidRotateBoard).sort();
+            }
+
+            async function showStage(stageKey) {
+                const st = boardPack?.boards?.[stageKey];
+                if (!st) {
+                    await setLinesAndWait(asRows([`MISSING: ${stageKey}`, "", "", "", "", "", "", ""]));
+                    return;
+                }
+
+                // Static
+                // Dynamic: OpenWeather One Call
+                if ((st.type || "static") === "dynamic" && (st.source || "") === "openweather_onecall") {
+                    if (!lastWeatherPayload) {
+                        try { await fetchWeatherForPack(boardPack); }
+                        catch (e) { console.warn("[WEATHER] initial fetch failed:", e); }
+                    }
+
+                    const rows = Array.isArray(st.rows) ? st.rows : [];
+
+                    if (lastWeatherPayload) {
+                        const rendered = rows.map(r => renderRowWithTokens(r, lastWeatherPayload, boardPack));
+                        await setLinesAndWait(asRows(rendered));
+                    } else {
+                        const rendered = rows.map(r => renderRowWithTokens(r, null, boardPack));
+                        await setLinesAndWait(asRows(rendered.length ? rendered : ["WEATHER", "UNAVAILABLE", "", "", "", "", "", ""]));
+                    }
+                    return;
+                }
+
+                // Static
+                await setLinesAndWait(asRows(st.rows || []));
+            }
+
+
+
+
+
+            function startRotation() {
+                rotateEnabled = true;
+                const runId = ++rotateRunId;
+
+                const dwell = Number(boardPack.rotation?.dwell_ms || DEFAULT_DWELL_MS);
+
+                const loop = async () => {
+                    if (!rotateEnabled || runId !== rotateRunId) return;
+
+                    if (boardPack.rotation?.enabled === false) {
+                        rotateTimer = setTimeout(loop, 500);
+                        return;
+                    }
+
+                    const order = getRotationKeys(boardPack);
+
+                    if (!order.length) {
+                        await setLinesAndWait(asRows(["NO BOARDS", "IN ROTATION", "", "", "", "", "", ""]));
+                        rotateTimer = setTimeout(loop, 1500);
+                        return;
+                    }
+
+                    for (const key of order) {
+                        if (!rotateEnabled || runId !== rotateRunId) return;
+
+                        cancelBoardWork();
+                        try {
+                            await showStage(key);
+                        } catch (e) {
+                            console.error("[BOARD] render failed:", key, e);
+                            await setLinesAndWait(asRows(["BOARD ERROR", String(key), "", "", "", "", "", ""]));
+                        }
+
+                        if (!rotateEnabled || runId !== rotateRunId) return;
+                        await delay(dwell);
+                    }
+
+                    rotateTimer = setTimeout(loop, 0);
+                };
+
+                loop();
+            }
+
+            /* ============================================================
+               FIRESTORE REALTIME APPLY
+            ============================================================ */
+            function applyBoardPackIncoming(pack, source) {
+                const normalized = normalizeBoardPack(pack);
+
+                const json = JSON.stringify(normalized);
+                if (json === lastBoardPackJSON) return;
+                lastBoardPackJSON = json;
+
+                const nextCols = Number(normalized.meta?.grid?.columns || 20);
+                const nextRows = Number(normalized.meta?.grid?.rows || 8);
+                const gridChanged = (nextCols !== COLS) || (nextRows !== ROWS);
+
+                boardPack = normalized;
+
+                if (gridChanged) buildBoard(nextCols, nextRows);
+
+                if (packNeedsWeather(boardPack)) startWeatherRefresh();
+                else stopWeatherRefresh();
+
+                stopRotation();
+                cancelBoardWork();
+                startRotation();
+
+                const okState = source && source.includes("server") ? "ok" : "warn";
+                setStatus(source || "firestore", "live", okState);
+            }
+
+            /* ============================================================
+               BOOTSTRAP
+            ============================================================ */
+            function waitForGlobal(name, timeoutMs = 12000, pollMs = 50) {
+                return new Promise((resolve, reject) => {
+                    const start = Date.now();
+                    (function tick() {
+                        if (window[name]) return resolve(window[name]);
+                        if (Date.now() - start >= timeoutMs) return reject(new Error(`${name} not available after ${timeoutMs}ms`));
+                        setTimeout(tick, pollMs);
+                    })();
+                });
+            }
+
+            let unsubscribeBoardPack = null;
+
+            (async () => {
+                buildBoard(20, 8);
+
+                setStatus("starting", "booting…", "warn");
+                boot(asRows(["FIRESTORE", "BOOTING…", "", "", "", "", "", ""]));
+
+                await initSound();
+
+                try {
+                    await waitForGlobal("__flipboardFirestoreReady", 12000, 50);
+                    await window.__flipboardFirestoreReady;
+
+                    if (!window.loadBoardPack) throw new Error("loadBoardPack() missing");
+
+                    const pack = await window.loadBoardPack();
+                    boardPack = normalizeBoardPack(pack);
+                    lastBoardPackJSON = JSON.stringify(boardPack);
+
+                    const cols = Number(boardPack.meta?.grid?.columns || 20);
+                    const rows = Number(boardPack.meta?.grid?.rows || 8);
+                    buildBoard(cols, rows);
+
+                    if (packNeedsWeather(boardPack)) startWeatherRefresh();
+                    else stopWeatherRefresh();
+
+                    const src = window.__flipboardLastSource || "firestore";
+                    setStatus(src, "loaded", src.includes("server") ? "ok" : "warn");
+
+                    if (typeof window.subscribeBoardPack === "function") {
+                        unsubscribeBoardPack = window.subscribeBoardPack((incomingPack, incomingSrc) => {
+                            applyBoardPackIncoming(incomingPack, incomingSrc);
+                        });
+                    }
+
+                } catch (err) {
+                    const msg = String(err?.message || err);
+                    console.error("[BOOT] Firestore load failed:", err);
+
+                    boardPack = normalizeBoardPack(JSON.parse(JSON.stringify(FALLBACK_STAGE_PACK)));
+                    lastBoardPackJSON = JSON.stringify(boardPack);
+                    buildBoard(boardPack.meta.grid.columns, boardPack.meta.grid.rows);
+
+                    if (packNeedsWeather(boardPack)) startWeatherRefresh();
+
+                    setStatus("fallback", msg, "err");
+                }
+
+                setTimeout(() => startRotation(), 900);
+            })();
         }
+    </script>
 
-        // 2) cache
-        try{
-          const snap = await getDocFromCache(ref);
-          window.__flipboardLastSource = "firestore:cache";
-          console.log("[FIRESTORE] got doc from CACHE");
-          return parseDoc(snap, "cache");
-        }catch(e2){
-          console.warn("[FIRESTORE] cache failed, trying DEFAULT:", e2?.code || e2?.message || e2);
-        }
-
-        // 3) default
-        const snap = await getDoc(ref);
-        window.__flipboardLastSource = "firestore:default";
-        console.log("[FIRESTORE] got doc from DEFAULT getDoc()");
-        return parseDoc(snap, "default");
-      };
-
-      window.subscribeStagePack = function subscribeStagePack(cb){
-        if (typeof cb !== "function") throw new Error("subscribeStagePack(cb) requires a callback");
-        console.log("[FIRESTORE] subscribing to realtime updates…");
-
-        const unsub = onSnapshot(ref, { includeMetadataChanges: true }, (snap) => {
-          try{
-            const fromCache = !!snap.metadata?.fromCache;
-            const src = fromCache ? "firestore:realtime-cache" : "firestore:realtime-server";
-            window.__flipboardLastSource = src;
-
-            const pack = parseDoc(snap, src);
-            cb(pack, src);
-          }catch(err){
-            console.error("[FIRESTORE] snapshot parse error:", err);
-          }
-        }, (err) => {
-          console.error("[FIRESTORE] onSnapshot error:", err);
-        });
-
-        return unsub;
-      };
-
-      return true;
-    }catch(e){
-      window.__flipboardFirestoreError = e;
-      console.error("[FIRESTORE] init failed:", e);
-      throw e;
-    }
-  })();
-</script>
-
-<script>
-/* ============================================================
-   GUARD — PREVENT DOUBLE BOOT
-============================================================ */
-if (window.__FLIPBOARD_BOOTED) {
-  console.warn("[BOOT] already initialized, skipping duplicate boot");
-} else {
-  window.__FLIPBOARD_BOOTED = true;
-
-  /* ============================================================
-     STATUS / PILLS
-  ============================================================ */
-  const pillSource = document.getElementById("pillSource");
-  const pillStatus = document.getElementById("pillStatus");
-  const sourceVal = document.getElementById("sourceVal");
-  const statusVal = document.getElementById("statusVal");
-  const gridVal = document.getElementById("gridVal");
-
-  function setPill(el, state){
-    el.classList.remove("ok","warn","err");
-    if(state) el.classList.add(state);
-  }
-  function setStatus(source, status, state){
-    sourceVal.textContent = source || "—";
-    statusVal.textContent = status || "—";
-    setPill(pillStatus, state || null);
-    setPill(pillSource, state || null);
-  }
-
-  /* ============================================================
-     CONFIG (Weather) — Flipboard owns weather
-  ============================================================ */
-  const OWM_URL =
-    "https://api.openweathermap.org/data/3.0/onecall?lat=35.0703678&lon=-81.960783&exclude=minutely,hourly&appid=1477cbdbd942d01b6e5b4eb630731226&units=imperial";
-  const WEATHER_REFRESH_MS = 10 * 60 * 1000;
-  const DEFAULT_DWELL_MS = 15000;
-  const WEATHER_LOCATION_LABEL = "BOILING SPGS SC";
-
-  /* ============================================================
-     CHARSET / HELPERS
-  ============================================================ */
-  const CHARSET =
-    " " +
-    "QZ&9_@A(1]H+Y°S}L/3\"J0T'X=U\\V?N{F%G$C)W8P;D,5R:6I-4M.2E7B!K©®™O#[";
-
-  const FLIP_MS = 140;
-  const STAGGER = 6;
-
-  const clamp = (s,n)=> (s??"").toUpperCase().slice(0,n).padEnd(n," ");
-  const normalize = c => CHARSET.includes(c) ? c : " ";
-  const delay = ms => new Promise(r=>setTimeout(r,ms));
-  const randChar = () => CHARSET[Math.floor(Math.random()*CHARSET.length)];
-
-  function fmtTime(d){
-    let h = d.getHours();
-    const m = String(d.getMinutes()).padStart(2,"0");
-    const ap = h >= 12 ? "P" : "A";
-    h = h % 12; if (h === 0) h = 12;
-    return `${h}:${m}${ap}`;
-  }
-  function cleanCond(s){
-    return String(s ?? "")
-      .toUpperCase()
-      .replace(/[^A-Z0-9 \-]/g," ")
-      .replace(/\s+/g," ")
-      .trim();
-  }
-
-  /* ============================================================
-     BOARD EPOCHS + TIMER CANCEL
-  ============================================================ */
-  let BOARD_EPOCH = 0;
-  let pendingTimers = [];
-  let ANIM_EPOCH = 0;
-
-  function bumpBoardEpoch(){ BOARD_EPOCH++; }
-  function bumpAnimEpoch(){ ANIM_EPOCH++; }
-
-  function clearPendingTimers(){
-    for (const id of pendingTimers) clearTimeout(id);
-    pendingTimers = [];
-  }
-  function cancelBoardWork(){
-    clearPendingTimers();
-    bumpBoardEpoch();
-    bumpAnimEpoch();
-  }
-
-  /* ============================================================
-     SOUND (Web Audio – auto enabled w/ master toggle)
-  ============================================================ */
-  let SOUND_ENABLED = true;
-
-  const CLICK_URL =
-    "https://raw.githubusercontent.com/they-call-me-E/Sharptools/main/CustomeTile/SplitFlap/Split-Flap.mp3";
-
-  let audioCtx = null;
-  let clickBuffer = null;
-  let soundReady = false;
-  let soundInitStarted = false;
-
-  function ensureAudioCtx(){
-    if (!audioCtx){
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    return audioCtx;
-  }
-
-  async function initSound(){
-    if (!SOUND_ENABLED || soundInitStarted) return;
-    soundInitStarted = true;
-
-    try{
-      const ctx = ensureAudioCtx();
-      if (ctx.state === "suspended") await ctx.resume();
-
-      const res = await fetch(CLICK_URL, { cache: "force-cache" });
-      if (!res.ok) throw new Error(`Sound fetch failed: ${res.status} ${res.statusText}`);
-
-      const buf = await res.arrayBuffer();
-      clickBuffer = await ctx.decodeAudioData(buf.slice(0));
-      soundReady = true;
-      console.log("[SOUND] ready");
-    }catch(err){
-      console.error("[SOUND] init failed:", err);
-      soundReady = false;
-      clickBuffer = null;
-    }
-  }
-
-  async function autoEnableSound(){
-    if (!SOUND_ENABLED) return;
-    await initSound();
-    if (soundReady) playFlap("A", { force:true, volume:0.06 });
-  }
-  window.addEventListener("pointerdown", autoEnableSound, { once:true });
-  window.addEventListener("keydown", autoEnableSound, { once:true });
-
-  const SOUND_MAX_PER_SEC = 18;
-  const SOUND_MIN_GAP_MS = Math.floor(1000 / SOUND_MAX_PER_SEC);
-  let lastSoundAt = 0;
-  let soundCarry = 0;
-
-  function shouldPlayClick(){
-    const now = performance.now();
-    const gap = now - lastSoundAt;
-    if (gap < SOUND_MIN_GAP_MS) return false;
-
-    soundCarry = Math.max(0, soundCarry - gap * 0.02);
-    const probability = Math.max(0.25, 1 - soundCarry * 0.06);
-    return Math.random() < probability;
-  }
-  function isAudibleChar(ch){ return ch !== " "; }
-
-  function playFlap(ch, opts = {}){
-    if (!SOUND_ENABLED || !soundReady || !clickBuffer) return;
-
-    const force = !!opts.force;
-    const vol = typeof opts.volume === "number" ? opts.volume : 0.18;
-
-    if (!force){
-      if (!isAudibleChar(ch)) return;
-      if (!shouldPlayClick()) return;
-    }
-
-    lastSoundAt = performance.now();
-    soundCarry += 1;
-
-    const ctx = ensureAudioCtx();
-    const src = ctx.createBufferSource();
-    src.buffer = clickBuffer;
-    src.playbackRate.value = 0.92 + Math.random() * 0.16;
-
-    const gain = ctx.createGain();
-    gain.gain.value = vol;
-
-    src.connect(gain).connect(ctx.destination);
-    src.start();
-  }
-
-  /* ============================================================
-     TILE (TRUE SPLIT-FLAP)
-  ============================================================ */
-  class Tile{
-    constructor(el){
-      this.el = el;
-
-      this.topStatic = el.querySelector(".top.static .glyphText");
-      this.botStatic = el.querySelector(".bottom.static .glyphText");
-
-      this.topFlap = el.querySelector(".flap.top");
-      this.botFlap = el.querySelector(".flap.bottom");
-
-      this.topFlapText = el.querySelector(".flap.top .glyphText");
-      this.botFlapText = el.querySelector(".flap.bottom .glyphText");
-
-      this.current = " ";
-      this.target = " ";
-      this.running = false;
-
-      this.resetFlaps();
-    }
-
-    resetFlaps(){
-      this.topFlap.classList.remove("shown"); this.topFlap.classList.add("hidden");
-      this.botFlap.classList.remove("shown"); this.botFlap.classList.add("hidden");
-
-      this.topFlap.style.transition = "none";
-      this.botFlap.style.transition = "none";
-      this.topFlap.style.transform = "rotateX(0deg)";
-      this.botFlap.style.transform = "rotateX(90deg)";
-      void this.el.offsetWidth;
-      this.topFlap.style.transition = `transform ${FLIP_MS}ms linear`;
-      this.botFlap.style.transition = `transform ${FLIP_MS}ms linear`;
-    }
-
-    setInstant(c){
-      this.current = this.target = normalize(c);
-      this.topStatic.textContent = this.current;
-      this.botStatic.textContent = this.current;
-      this.resetFlaps();
-    }
-
-    setTarget(c){
-      this.target = normalize(c);
-      if (!this.running) this.run();
-    }
-
-    step(c){
-      return CHARSET[(CHARSET.indexOf(c)+1) % CHARSET.length];
-    }
-
-    async run(){
-      if (this.current === this.target) return;
-      this.running = true;
-
-      const myEpoch = ANIM_EPOCH;
-
-      while (this.current !== this.target){
-        if (myEpoch !== ANIM_EPOCH) break;
-
-        const next = this.step(this.current);
-        await this.flipTo(next, myEpoch);
-
-        if (myEpoch !== ANIM_EPOCH) break;
-        this.current = next;
-      }
-
-      this.running = false;
-    }
-
-    async flipTo(next, myEpoch){
-      if (myEpoch !== ANIM_EPOCH) return;
-
-      this.topFlapText.textContent = this.current;
-      this.botFlapText.textContent = next;
-
-      this.topFlap.classList.remove("hidden"); this.topFlap.classList.add("shown");
-      this.botFlap.classList.remove("hidden"); this.botFlap.classList.add("shown");
-
-      this.topFlap.style.transition = "none";
-      this.botFlap.style.transition = "none";
-      this.topFlap.style.transform = "rotateX(0deg)";
-      this.botFlap.style.transform = "rotateX(90deg)";
-      void this.el.offsetWidth;
-      this.topFlap.style.transition = `transform ${FLIP_MS}ms linear`;
-      this.botFlap.style.transition = `transform ${FLIP_MS}ms linear`;
-
-      this.topFlap.style.transform = "rotateX(-90deg)";
-      this.botFlap.style.transform = "rotateX(0deg)";
-
-      playFlap(next);
-
-      await delay(FLIP_MS/2);
-      if (myEpoch !== ANIM_EPOCH) return;
-
-      this.topStatic.textContent = next;
-      this.botStatic.textContent = next;
-
-      await delay(FLIP_MS/2);
-      if (myEpoch !== ANIM_EPOCH) return;
-
-      this.resetFlaps();
-    }
-  }
-
-  /* ============================================================
-     BUILD / REBUILD BOARD
-  ============================================================ */
-  const board = document.getElementById("board");
-  let tiles = [];
-  let COLS = 20;
-  let ROWS = 8;
-
-  function applyGrid(cols, rows){
-    COLS = cols;
-    ROWS = rows;
-    document.documentElement.style.setProperty("--cols", COLS);
-    document.documentElement.style.setProperty("--rows", ROWS);
-    gridVal.textContent = `${COLS}×${ROWS}`;
-  }
-
-  function buildBoard(cols, rows){
-    applyGrid(cols, rows);
-
-    board.innerHTML = "";
-    tiles = [];
-
-    for (let i=0;i<COLS*ROWS;i++){
-      const tile = document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML = `
-        <div class="half top static"><span class="glyphText"> </span></div>
-        <div class="half bottom static"><span class="glyphText"> </span></div>
-
-        <div class="flap top hidden">
-          <div class="half top" style="position:relative;height:100%;">
-            <span class="glyphText"> </span>
-          </div>
-        </div>
-
-        <div class="flap bottom hidden">
-          <div class="half bottom" style="position:relative;height:100%;">
-            <span class="glyphText"> </span>
-          </div>
-        </div>
-      `;
-      board.appendChild(tile);
-      const t = new Tile(tile);
-      t.setInstant(" ");
-      tiles.push(t);
-    }
-  }
-
-  /* ============================================================
-     DISPLAY API
-  ============================================================ */
-  function asRows(lines){
-    const arr = Array.isArray(lines) ? lines : [];
-    return Array.from({ length: ROWS }, (_, i) => clamp(arr[i] ?? "", COLS));
-  }
-
-  function setLines(lines){
-    const epoch = BOARD_EPOCH;
-    const padded = asRows(lines);
-    const flat = padded.join("").split("");
-
-    flat.forEach((c,i)=>{
-      const id = setTimeout(()=>{
-        if (epoch !== BOARD_EPOCH) return;
-        tiles[i]?.setTarget(c);
-      }, i * STAGGER);
-      pendingTimers.push(id);
-    });
-  }
-
-  function waitForAllTiles(){
-    return new Promise(resolve => {
-      const check = () => {
-        if (tiles.every(t => !t.running)) resolve();
-        else requestAnimationFrame(check);
-      };
-      check();
-    });
-  }
-
-  async function setLinesAndWait(lines){
-    clearPendingTimers();
-    setLines(lines);
-    await waitForAllTiles();
-  }
-
-  function boot(lines){
-    cancelBoardWork();
-    tiles.forEach(t => t.setInstant(randChar()));
-    const id = setTimeout(()=>setLines(lines), 60);
-    pendingTimers.push(id);
-  }
-
-  /* ============================================================
-     WEATHER (Flipboard only, runs only if stagePack needs it)
-  ============================================================ */
-  let lastWeatherPayload = null;
-  let lastWeatherFetchedAt = null;
-  let weatherRefreshTimer = null;
-
-  async function fetchWeather(){
-    const res = await fetch(OWM_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Weather fetch failed: ${res.status} ${res.statusText}`);
-    const json = await res.json();
-    lastWeatherPayload = json;
-    lastWeatherFetchedAt = new Date();
-    console.log("[WEATHER] fetched", fmtTime(lastWeatherFetchedAt));
-    return json;
-  }
-
-  function makeWeatherVars(payload){
-    const updated = lastWeatherFetchedAt ? fmtTime(lastWeatherFetchedAt) : fmtTime(new Date());
-
-    const temp = payload?.current?.temp;
-    const feels = payload?.current?.feels_like;
-    const wind = payload?.current?.wind_speed;
-    const cond = cleanCond(
-      payload?.current?.weather?.[0]?.description ||
-      payload?.current?.weather?.[0]?.main ||
-      "N/A"
-    );
-
-    const t = (typeof temp === "number") ? Math.round(temp) : null;
-    const f = (typeof feels === "number") ? Math.round(feels) : null;
-    const w = (typeof wind === "number") ? Math.round(wind) : null;
-
-    const showFeels = (t != null && f != null && Math.abs(f - t) >= 3);
-    const hot = (t != null && t >= 100) || (f != null && f >= 100);
-
-    let tempLine = "--°";
-    if (t != null){
-      if (showFeels && f != null) tempLine = hot ? `${t}° FL ${f}°` : `${t}°  FEELS: ${f}°`;
-      else tempLine = `${t}°`;
-    }
-
-    const windLine = (w != null) ? `WND: ${w}MPH` : "";
-    const condLine = cond;
-
-    return {
-      TIME: updated,
-      TEMP_LINE: tempLine,
-      CONDITION_LINE: condLine,
-      WIND_LINE: windLine,
-      LOCATION: WEATHER_LOCATION_LABEL
-    };
-  }
-
-  function renderTemplateRow(row, vars){
-    let out = String(row ?? "");
-    out = out.replaceAll("{TIME}", vars.TIME);
-    out = out.replaceAll("{TEMP_LINE}", vars.TEMP_LINE);
-    out = out.replaceAll("{CONDITION_LINE}", vars.CONDITION_LINE);
-    out = out.replaceAll("{WIND_LINE}", vars.WIND_LINE);
-    out = out.replaceAll("{LOCATION}", vars.LOCATION);
-    return out;
-  }
-
-  function packNeedsWeather(pack){
-    const stages = pack?.stages || {};
-    return Object.values(stages).some(st => (st?.type === "dynamic" && st?.source === "openweather_onecall"));
-  }
-
-  function stopWeatherRefresh(){
-    if (weatherRefreshTimer) clearTimeout(weatherRefreshTimer);
-    weatherRefreshTimer = null;
-  }
-
-  function startWeatherRefresh(){
-    stopWeatherRefresh();
-    const loop = async () => {
-      try{ await fetchWeather(); }
-      catch(e){ console.warn("[WEATHER] fetch failed (keeping cached):", e); }
-      weatherRefreshTimer = setTimeout(loop, WEATHER_REFRESH_MS);
-    };
-    loop();
-  }
-
-  /* ============================================================
-     STAGE PACK (from Firestore)
-  ============================================================ */
-  const FALLBACK_STAGE_PACK = {
-    meta: { grid: { columns: 20, rows: 8 }, description: "Fallback" },
-    rotation: { enabled: true, dwell_ms: 15000, order: ["stage_1", "stage_2"] },
-    stages: {
-      stage_1: { name:"Welcome", type:"static", rows: ["WELCOME","JAKE","SMART HOME DASHBOARD","","SPLIT FLAP DISPLAY","","",""] },
-      stage_2: { name:"Weather", type:"dynamic", source:"openweather_onecall",
-        rows: ["{LOCATION}","{TEMP_LINE}","{CONDITION_LINE}  {WIND_LINE}","","UPDATED: {TIME}","","",""] }
-    }
-  };
-
-  let stagePack = JSON.parse(JSON.stringify(FALLBACK_STAGE_PACK));
-  let lastStagePackJSON = "";
-
-  function normalizeStagePack(pack){
-    const p = pack || {};
-    p.meta ||= { grid:{ columns:20, rows:8 }, description:"" };
-    p.meta.grid ||= { columns:20, rows:8 };
-    p.rotation ||= { enabled:true, dwell_ms: DEFAULT_DWELL_MS, order:[] };
-    p.rotation.order ||= [];
-    p.stages ||= {};
-    return p;
-  }
-
-  /* ============================================================
-     ROTATION (filters invalid and one_shot stages)
-  ============================================================ */
-  let rotateEnabled = true;
-  let rotateRunId = 0;
-  let rotateTimer = null;
-
-  function stopRotation(){
-    rotateEnabled = false;
-    if (rotateTimer) clearTimeout(rotateTimer);
-    rotateTimer = null;
-    rotateRunId++;
-  }
-
-  function getRotationKeys(pack){
-    const stages = pack?.stages || {};
-    const isValidRotateStage = (key) => {
-      const st = stages[key];
-      if (!st) return false;
-      if (st.one_shot) return false;           // ✅ never rotate one-shot
-      return true;
-    };
-
-    const order = Array.isArray(pack?.rotation?.order) ? pack.rotation.order : [];
-    const cleaned = order.filter(isValidRotateStage);
-
-    // fallback: all non-one-shot stages, stable sort by key
-    if (cleaned.length) return cleaned;
-    return Object.keys(stages).filter(isValidRotateStage).sort();
-  }
-
-  async function showStage(stageKey){
-    const st = stagePack.stages?.[stageKey];
-    if(!st){
-      console.warn("[STAGE] missing", stageKey);
-      await setLinesAndWait(asRows([`MISSING: ${stageKey}`,"","","","","","",""]));
-      return;
-    }
-
-    if((st.type || "static") === "dynamic" && (st.source || "") === "openweather_onecall"){
-      console.log("[STAGE] dynamic weather", stageKey);
-
-      if(!lastWeatherPayload){
-        try{ await fetchWeather(); } catch(e){ console.warn("[WEATHER] initial fetch failed:", e); }
-      }
-
-      if(lastWeatherPayload){
-        const vars = makeWeatherVars(lastWeatherPayload);
-        const rows = Array.isArray(st.rows) ? st.rows : [];
-        const rendered = rows.map(r => renderTemplateRow(r, vars));
-        await setLinesAndWait(asRows(rendered));
-      }else{
-        await setLinesAndWait(asRows(["WEATHER","UNAVAILABLE","","","","","",""]));
-      }
-      return;
-    }
-
-    console.log("[STAGE] static", stageKey);
-    await setLinesAndWait(asRows(st.rows || []));
-  }
-
-  function startRotation(){
-    rotateEnabled = true;
-    const runId = ++rotateRunId;
-
-    const order = getRotationKeys(stagePack);
-    const dwell = Number(stagePack.rotation?.dwell_ms || DEFAULT_DWELL_MS);
-
-    console.log("[ROTATE] enabled:", stagePack.rotation?.enabled !== false, "dwell_ms:", dwell, "order:", order);
-
-    const loop = async () => {
-      if (!rotateEnabled || runId !== rotateRunId) return;
-
-      if(stagePack.rotation?.enabled === false){
-        rotateTimer = setTimeout(loop, 500);
-        return;
-      }
-
-      if(!order.length){
-        await setLinesAndWait(asRows(["NO STAGES","IN ROTATION","","","","","",""]));
-        rotateTimer = setTimeout(loop, 1500);
-        return;
-      }
-
-      for(const key of order){
-        if (!rotateEnabled || runId !== rotateRunId) return;
-
-        cancelBoardWork();
-        await showStage(key);
-
-        if (!rotateEnabled || runId !== rotateRunId) return;
-        await delay(dwell);
-      }
-
-      rotateTimer = setTimeout(loop, 0);
-    };
-
-    loop();
-  }
-
-  /* ============================================================
-     FIRESTORE REALTIME APPLY (less visual spam)
-  ============================================================ */
-  function applyStagePackIncoming(pack, source){
-    const normalized = normalizeStagePack(pack);
-
-    const json = JSON.stringify(normalized);
-    if (json === lastStagePackJSON) {
-      console.log("[PACK] unchanged (ignored)");
-      return;
-    }
-    lastStagePackJSON = json;
-
-    const nextCols = Number(normalized.meta?.grid?.columns || 20);
-    const nextRows = Number(normalized.meta?.grid?.rows || 8);
-    const gridChanged = (nextCols !== COLS) || (nextRows !== ROWS);
-
-    stagePack = normalized;
-
-    if (gridChanged) {
-      console.log("[PACK] grid changed -> rebuild", `${COLS}x${ROWS} -> ${nextCols}x${nextRows}`);
-      buildBoard(nextCols, nextRows);
-    } else {
-      console.log("[PACK] grid unchanged -> no rebuild");
-    }
-
-    // ✅ Weather loop only if needed
-    if (packNeedsWeather(stagePack)) startWeatherRefresh();
-    else stopWeatherRefresh();
-
-    // restart rotation cleanly
-    stopRotation();
-    cancelBoardWork();
-    startRotation();
-
-    const okState = source && source.includes("server") ? "ok" : "warn";
-    setStatus(source || "firestore", "live", okState);
-  }
-
-  /* ============================================================
-     BOOTSTRAP
-  ============================================================ */
-  function waitForGlobal(name, timeoutMs = 12000, pollMs = 50){
-    return new Promise((resolve, reject) => {
-      const start = Date.now();
-      (function tick(){
-        if(window[name]) return resolve(window[name]);
-        if(Date.now() - start >= timeoutMs) return reject(new Error(`${name} not available after ${timeoutMs}ms`));
-        setTimeout(tick, pollMs);
-      })();
-    });
-  }
-
-  let unsubscribeStagePack = null;
-  let didFirstRealtime = false;
-
-  (async () => {
-    buildBoard(20, 8);
-
-    setStatus("starting", "booting…", "warn");
-    boot(asRows(["FIRESTORE","BOOTING…","","","","","",""]));
-
-    await initSound();
-
-    try{
-      console.log("[FIRESTORE] waiting module…");
-      await waitForGlobal("__flipboardFirestoreReady", 12000, 50);
-      await window.__flipboardFirestoreReady;
-
-      if(!window.loadStagePack) throw new Error("loadStagePack() missing");
-
-      const pack = await window.loadStagePack();
-      stagePack = normalizeStagePack(pack);
-      lastStagePackJSON = JSON.stringify(stagePack);
-
-      const cols = Number(stagePack.meta?.grid?.columns || 20);
-      const rows = Number(stagePack.meta?.grid?.rows || 8);
-      buildBoard(cols, rows);
-
-      // ✅ Weather loop only if needed
-      if (packNeedsWeather(stagePack)) startWeatherRefresh();
-      else stopWeatherRefresh();
-
-      const src = window.__flipboardLastSource || "firestore";
-      const srcState = (src.includes("server")) ? "ok" : "warn";
-      setStatus(src, "loaded", srcState);
-      console.log("[BOOT] initial load OK:", src);
-
-      if (typeof window.subscribeStagePack === "function") {
-        unsubscribeStagePack = window.subscribeStagePack((incomingPack, incomingSrc) => {
-          console.log("[FIRESTORE] realtime update:", incomingSrc);
-
-          if (!didFirstRealtime) {
-            didFirstRealtime = true;
-            setStatus(incomingSrc, "realtime OK", incomingSrc.includes("server") ? "ok" : "warn");
-          }
-
-          applyStagePackIncoming(incomingPack, incomingSrc);
-        });
-
-        console.log("[FIRESTORE] realtime subscribed ✅");
-      } else {
-        console.warn("[FIRESTORE] subscribeStagePack missing — no realtime");
-      }
-
-    }catch(err){
-      const msg = String(err?.message || err);
-      console.error("[BOOT] Firestore load failed:", err);
-
-      stagePack = normalizeStagePack(JSON.parse(JSON.stringify(FALLBACK_STAGE_PACK)));
-      lastStagePackJSON = JSON.stringify(stagePack);
-      buildBoard(stagePack.meta.grid.columns, stagePack.meta.grid.rows);
-
-      // fallback pack uses weather stage -> start refresh
-      if (packNeedsWeather(stagePack)) startWeatherRefresh();
-
-      setStatus("fallback", msg, "err");
-    }
-
-    setTimeout(()=>startRotation(), 900);
-  })();
-}
-</script>
 
 </body>
+
 </html>
