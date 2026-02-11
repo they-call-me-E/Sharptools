@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>FlipBoard Board Editor</title>
+
     <style>
         :root {
             --bg: #0b0c10;
@@ -88,7 +89,6 @@
         .app {
             display: grid;
             grid-template-columns: 320px 8px 1fr;
-            /* left | splitter | right */
             gap: 0;
             min-height: 520px;
         }
@@ -569,12 +569,10 @@
             display: none;
         }
 
-        /* optional, just makes the caret feel clickable */
         .helpToggle {
             cursor: pointer;
             user-select: none;
         }
-
 
         /* Modal */
         .modalOverlay {
@@ -656,7 +654,6 @@
                 display: none;
             }
 
-            /* hide the huge inline helper list on mobile */
             .desktopHelper {
                 display: none !important;
             }
@@ -665,13 +662,11 @@
                 align-items: flex-end;
             }
 
-            /* bottom sheet feel */
             .modal {
                 border-radius: 18px;
             }
         }
 
-        /* desktop: keep helper panel visible, but still allow modal button */
         @media (min-width: 901px) {
             .mobileHelperBtnOnly {
                 display: none !important;
@@ -696,12 +691,13 @@
             background: rgba(255, 77, 77, .12);
         }
 
-        /* ============================================================
-               THEME FIX: Select dropdown + number stepper arrows
-               (Chrome/Edge/Firefox)
-            ============================================================ */
+        /* ✅ YOUR FINALIZED DROPDOWN STYLE */
+        select option:checked {
+            background: rgba(63, 177, 206, .82);
+            color: var(--text);
+        }
 
-        /* tighten look for selects/numbers to match theme */
+        /* THEME FIX: Select dropdown + number stepper arrows */
         select,
         input[type="number"] {
             background: rgba(0, 0, 0, .28) !important;
@@ -709,14 +705,12 @@
             color: var(--text) !important;
         }
 
-        /* Custom themed select arrow */
         select {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
 
             padding-right: 38px;
-            /* room for arrow */
             cursor: pointer;
 
             background-image:
@@ -745,18 +739,11 @@
             box-shadow: 0 0 0 3px rgba(63, 177, 206, .12);
         }
 
-        /* Dropdown list theming (works where supported) */
         select option {
             background: #0f1117;
             color: var(--text);
         }
 
-        select option:checked {
-            background: rgba(63, 177, 206, .82);
-            color: var(--text);
-        }
-
-        /* Chrome/Edge number stepper arrows: make them light on dark */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
             opacity: 1;
@@ -775,7 +762,6 @@
             }
         }
     </style>
-
 </head>
 
 <body>
@@ -823,32 +809,38 @@
                     <label for="metaDescription">Description</label>
                     <input type="text" id="metaDescription" placeholder="Pack description" />
                 </div>
-
-                <!-- Minimal weather config (kept conservative): label/value/type stored under meta.weather.location -->
-                <div class="field" style="min-width:180px;">
-                    <label for="weatherType">Weather Type</label>
-                    <select id="weatherType">
-                        <option value="city">city</option>
-                        <option value="city_state">city_state</option>
-                        <option value="zip">zip</option>
-                    </select>
-                </div>
-
-                <div class="field" style="min-width:260px;flex:1;">
-                    <label for="weatherValue">Weather Value</label>
-                    <input type="text" id="weatherValue" placeholder="Boiling Springs / Boiling Springs, SC / 29316" />
-                </div>
-
-                <div class="field" style="min-width:220px;">
-                    <label for="weatherLabel">Weather Label</label>
-                    <input type="text" id="weatherLabel" placeholder="BOILING SPGS SC" />
-                </div>
             </div>
 
-            <div class="hint" style="margin-top:10px;">
-                Weather settings are saved under <span class="mono">meta.weather.location</span>. FlipBoard Display uses
-                these to fetch + render <span class="mono">{LOCATION}</span>.
-                (Editor makes no API calls.)
+            <!-- ✅ Weather dashboard fields (hidden unless Weather board selected) -->
+            <div id="dashboardWeatherWrap" style="display:none; margin-top:10px;">
+                <div class="globalRow">
+                    <div class="field" style="min-width:180px;">
+                        <label for="weatherType">Weather Type</label>
+                        <select id="weatherType">
+                            <option value="city">city</option>
+                            <option value="city_state">city_state</option>
+                            <option value="zip">zip</option>
+                        </select>
+                    </div>
+
+                    <div class="field" style="min-width:260px;flex:1;">
+                        <label for="weatherValue">Weather Value</label>
+                        <input type="text" id="weatherValue"
+                            placeholder="Boiling Springs / Boiling Springs, SC / 29316" />
+                    </div>
+
+                    <div class="field" style="min-width:220px;">
+                        <label for="weatherLabel">Weather Label</label>
+                        <input type="text" id="weatherLabel" placeholder="BOILING SPGS SC" />
+                    </div>
+                </div>
+
+                <div class="hint" style="margin-top:10px;">
+                    Weather settings are saved under <span class="mono">meta.weather.location</span>. FlipBoard Display
+                    uses
+                    these to fetch + render <span class="mono">{LOCATION}</span>.
+                    (Editor makes no API calls.)
+                </div>
             </div>
         </div>
 
@@ -891,7 +883,7 @@
                 </div>
 
                 <!-- Helper (desktop inline, mobile modal) -->
-                <div class="panel">
+                <div class="panel" id="weatherTokenPanel">
                     <h3>Weather Tokens Helper</h3>
 
                     <div class="row" style="flex-wrap:wrap;">
@@ -900,8 +892,8 @@
                     </div>
 
                     <div class="hint" style="margin-top:10px;">
-                        Use tokens in rows like: <span class="mono">TEMP: {TEMP_LINE}</span> or a JSON path like <span
-                            class="mono">{current.temp}</span>.
+                        Use tokens in rows like: <span class="mono">TEMP: {TEMP_LINE}</span> or a JSON path like
+                        <span class="mono">{current.temp}</span>.
                     </div>
 
                     <div class="desktopHelper" style="margin-top:12px;">
@@ -999,12 +991,13 @@
                 <div class="helpList" id="helpListModal"></div>
 
                 <div class="hint" style="margin-top:12px;">
-                    Tip: combine text + tokens like <span class="mono">TEMP: {TEMP_LINE}</span> or <span
-                        class="mono">WIND: {current.wind_speed}</span>.
+                    Tip: combine text + tokens like <span class="mono">TEMP: {TEMP_LINE}</span> or
+                    <span class="mono">WIND: {current.wind_speed}</span>.
                 </div>
             </div>
         </div>
     </div>
+
     <!-- Modal: create board -->
     <div class="modalOverlay" id="createBoardOverlay" aria-hidden="true">
         <div class="modal" role="dialog" aria-modal="true" aria-label="Create New Board">
@@ -1042,7 +1035,6 @@
                         If checked, this board will be created as <span class="mono">type=dynamic</span> with
                         <span class="mono">source=openweather_onecall</span>.
                     </div>
-
 
                     <div class="toggle" style="margin-top:6px;">
                         <input type="checkbox" id="cbOneShot" />
@@ -1096,14 +1088,13 @@
         };
 
         const COLLECTION = "flipboard";
-        const DOC_ID = "boardPack";   // ✅ matches your Firestore screenshot
+        const DOC_ID = "boardPack";
         const FIELD = "data";
 
         window.__flipboardFirestoreReady = (async () => {
             try {
                 const app = initializeApp(firebaseConfig);
 
-                // Android/WebView safe long-polling transport
                 const db = initializeFirestore(app, {
                     experimentalForceLongPolling: true,
                     useFetchStreams: false
@@ -1185,75 +1176,104 @@
         const DUMMY_PACK = {
             "meta": {
                 "grid": { "columns": 20, "rows": 8 },
-                "description": "Split-flap dashboard board definitions",
+                "description": "FlipBoard Demo Pack — Split Flap Dashboard",
                 "weather": {
-                    "location": { "type": "city_state", "value": "Boiling Springs, SC", "label": "BOILING SPGS SC" }
+                    "location": {
+                        "type": "zip",
+                        "value": "60601",
+                        "label": "CHICAGO IL"
+                    }
                 }
             },
             "rotation": {
                 "enabled": true,
                 "dwell_ms": 15000,
-                "order": ["stage_2", "stage_1", "stage_3"]
+                "order": [
+                    "welcome",
+                    "weather_main",
+                    "system_status",
+                    "daily_agenda"
+                ]
             },
             "boards": {
-                "stage_1": {
-                    "name": "Weather",
+
+                "welcome": {
+                    "name": "Welcome",
+                    "type": "static",
+                    "rows": [
+                        "FLIPBOARD           ",
+                        "DIGITAL DASHBOARD   ",
+                        "                    ",
+                        "REAL TIME DATA      ",
+                        "ROTATING DISPLAY    ",
+                        "                    ",
+                        "CONFIGURABLE PANELS ",
+                        "                    "
+                    ]
+                },
+
+                "weather_main": {
+                    "name": "Weather — Local",
                     "type": "dynamic",
                     "source": "openweather_onecall",
                     "rows": [
-                        "BOILING SPGS SC     ",
-                        "{TEMP_LINE}         ",
+                        "{LOCATION}          ",
+                        "TEMP: {TEMP_LINE}   ",
                         "{CONDITION_LINE}    ",
                         "{WIND_LINE}         ",
-                        "                    ",
+                        "HUM: {current.humidity}%",
+                        "UV:  {current.uvi}   ",
                         "UPDATED: {TIME}     ",
-                        "                    ",
                         "                    "
                     ]
                 },
-                "stage_2": {
-                    "name": "Welcome Screen",
+
+                "system_status": {
+                    "name": "System Status",
                     "type": "static",
                     "rows": [
-                        "WELCOME             ",
-                        "JAKE                ",
-                        "SMART HOME DASHBOARD",
+                        "SYSTEM STATUS       ",
+                        "FIRESTORE: ONLINE   ",
+                        "WEATHER: CONNECTED  ",
+                        "ROTATION: ENABLED   ",
                         "                    ",
-                        "SPLIT FLAP DISPLAY  ",
-                        "                    ",
-                        "                    ",
+                        "GRID: 20 x 8        ",
+                        "DWELL: 15 SECONDS   ",
                         "                    "
                     ]
                 },
-                "stage_3": {
-                    "name": "Today Schedule",
+
+                "daily_agenda": {
+                    "name": "Daily Agenda",
                     "type": "static",
                     "rows": [
-                        "4:00 PM  TUTOR E    ",
-                        "5-7 PM   BULLDOG    ",
-                        "        BALL        ",
-                        "7:30 PM  DINNER     ",
-                        "9:00 PM  WIND DOWN  ",
-                        "                    ",
+                        "TODAY               ",
+                        "8:00 AM  TEAM SYNC  ",
+                        "10:30 AM DESIGN REV ",
+                        "1:00 PM  CLIENT MTG ",
+                        "3:30 PM  BUILD TEST ",
+                        "6:00 PM  GYM        ",
                         "                    ",
                         "                    "
                     ]
                 },
-                "stage_demo": {
+
+                "demo_mode": {
                     "name": "Demo Mode",
                     "type": "static",
                     "one_shot": true,
                     "rows": [
                         "DEMO MODE           ",
-                        "STAGE TEST          ",
-                        "SPLIT FLAP          ",
-                        "ANIMATION           ",
+                        "SPLIT FLAP TEST     ",
+                        "ANIMATION RUN       ",
                         "                    ",
+                        "PRESS TO TRIGGER    ",
                         "                    ",
                         "                    ",
                         "                    "
                     ]
                 }
+
             }
         };
 
@@ -1264,7 +1284,7 @@
         const TOKEN_GROUPS = [
             {
                 title: "Preset Tokens (recommended)",
-                defaultOpen: false, // ✅ collapsed by default (keeps page short)
+                defaultOpen: false,
                 items: [
                     { token: "{LOCATION}", desc: "Resolved display location for this pack (from Weather Label)." },
                     { token: "{TIME}", desc: "Weather timestamp (from OpenWeather data time), formatted by Flipboard." },
@@ -1303,33 +1323,22 @@
         ];
 
         /* ============================================================
-           Create Board Modal (single modal, all options)
+           Create Board Modal
         ============================================================ */
         const createBoardOverlay = document.getElementById("createBoardOverlay");
         const createBoardClose = document.getElementById("createBoardClose");
         const cbKeyEl = document.getElementById("cbKey");
         const cbNameEl = document.getElementById("cbName");
-
-        // const cbTypeEl = document.getElementById("cbType");
-        // const cbSourceWrapEl = document.getElementById("cbSourceWrap");
-        // const cbSourceEl = document.getElementById("cbSource");
-
-
         const cbIsWeatherEl = document.getElementById("cbIsWeather");
-
         const cbOneShotEl = document.getElementById("cbOneShot");
         const cbAddToRotationEl = document.getElementById("cbAddToRotation");
         const cbCancelBtn = document.getElementById("cbCancel");
         const cbCreateBtn = document.getElementById("cbCreate");
 
         function openCreateBoardModal() {
-            // Pre-fill sensible defaults
             const keyDefault = nextKey(pack);
             cbKeyEl.value = keyDefault;
             cbNameEl.value = "New Board";
-            // cbTypeEl.value = "static";
-            // cbSourceEl.value = "";
-            // cbSourceWrapEl.style.display = "none";
             cbIsWeatherEl.checked = false;
 
             cbOneShotEl.checked = false;
@@ -1338,39 +1347,18 @@
 
             createBoardOverlay.classList.add("show");
             createBoardOverlay.setAttribute("aria-hidden", "false");
-
             setTimeout(() => cbKeyEl.focus(), 0);
         }
 
         function closeCreateBoardModal() {
-            // If focus is inside the modal, move it out BEFORE hiding
             if (createBoardOverlay.contains(document.activeElement)) {
                 document.activeElement.blur();
-                // send focus somewhere sensible in the main UI
                 setTimeout(() => btnAddBoard?.focus(), 0);
             }
-
             createBoardOverlay.classList.remove("show");
             createBoardOverlay.setAttribute("aria-hidden", "true");
         }
 
-
-        // function updateCreateBoardUI() {
-        //     const isDynamic = cbTypeEl.value === "dynamic";
-        //     cbSourceWrapEl.style.display = isDynamic ? "" : "none";
-        //     if (!isDynamic) cbSourceEl.value = "";
-
-        //     // If one-shot, it can't be in rotation
-        //     if (cbOneShotEl.checked) {
-        //         cbAddToRotationEl.checked = false;
-        //         cbAddToRotationEl.disabled = true;
-        //     } else {
-        //         cbAddToRotationEl.disabled = false;
-        //     }
-        // }
-
-        // cbTypeEl.addEventListener("change", updateCreateBoardUI);
-        // cbOneShotEl.addEventListener("change", updateCreateBoardUI);
         cbOneShotEl.addEventListener("change", () => {
             if (cbOneShotEl.checked) {
                 cbAddToRotationEl.checked = false;
@@ -1379,7 +1367,6 @@
                 cbAddToRotationEl.disabled = false;
             }
         });
-
 
         createBoardClose.addEventListener("click", closeCreateBoardModal);
         cbCancelBtn.addEventListener("click", closeCreateBoardModal);
@@ -1394,65 +1381,7 @@
             }
         });
 
-        function createBoardFromModal1() {
-            // Normalize + validate key
-            const rawKey = cbKeyEl.value || "";
-            const keyDefault = nextKey(pack);
-            const key = slugifyKey(rawKey) || keyDefault;
-
-            if (pack.boards[key]) {
-                alert("That board key already exists. Pick a different key.");
-                cbKeyEl.focus();
-                return;
-            }
-
-            const name = (cbNameEl.value || "New Board").trim() || "New Board";
-            // const type = (cbTypeEl.value === "dynamic") ? "dynamic" : "static";
-            // const oneShot = !!cbOneShotEl.checked;
-            // const addToRotation = !!cbAddToRotationEl.checked && !oneShot;
-
-            // // Build rows to current grid size
-            const cols = getCols();
-            const rows = getRows();
-            const rowsArr = Array.from({ length: rows }, () => " ".repeat(cols));
-
-            // const newBoard = { name, type, rows: rowsArr };
-            // if (type === "dynamic") {
-            //     const src = (cbSourceEl.value || "").trim();
-            //     if (!src) {
-            //         alert("Pick a Dynamic Source for a dynamic board.");
-            //         cbSourceEl.focus();
-            //         return;
-            //     }
-            //     newBoard.source = src;
-            // }
-
-            const isWeather = !!cbIsWeatherEl.checked;
-            const type = isWeather ? "dynamic" : "static";
-
-            const newBoard = { name, type, rows: rowsArr };
-
-            if (isWeather) {
-                newBoard.source = "openweather_onecall";
-            }
-
-            if (oneShot) newBoard.one_shot = true;
-
-            pack.boards[key] = newBoard;
-
-            if (addToRotation) {
-                pack.rotation.order = pack.rotation.order || [];
-                pack.rotation.order.push(key);
-            }
-
-            closeCreateBoardModal();
-            selectBoard(key);
-            renderLists();
-            updateDirtyUI();
-            toast("Board created");
-        }
         function createBoardFromModal() {
-            // Normalize + validate key
             const rawKey = cbKeyEl.value || "";
             const keyDefault = nextKey(pack);
             const key = slugifyKey(rawKey) || keyDefault;
@@ -1468,21 +1397,15 @@
             const oneShot = !!cbOneShotEl.checked;
             const addToRotation = !!cbAddToRotationEl.checked && !oneShot;
 
-            // ✅ Weather checkbox drives type/source
             const isWeather = !!cbIsWeatherEl.checked;
             const type = isWeather ? "dynamic" : "static";
 
-            // ✅ DEFINE rowsArr (this is what your error is about)
             const cols = getCols();
             const rows = getRows();
             const rowsArr = Array.from({ length: rows }, () => " ".repeat(cols));
 
             const newBoard = { name, type, rows: rowsArr };
-
-            if (isWeather) {
-                newBoard.source = "openweather_onecall";
-            }
-
+            if (isWeather) newBoard.source = "openweather_onecall";
             if (oneShot) newBoard.one_shot = true;
 
             pack.boards[key] = newBoard;
@@ -1500,7 +1423,6 @@
         }
 
         cbCreateBtn.addEventListener("click", createBoardFromModal);
-
 
         /* ============================================================
            Utilities
@@ -1580,6 +1502,7 @@
         const weatherTypeEl = document.getElementById("weatherType");
         const weatherValueEl = document.getElementById("weatherValue");
         const weatherLabelEl = document.getElementById("weatherLabel");
+        const dashboardWeatherWrapEl = document.getElementById("dashboardWeatherWrap");
 
         const btnAddBoard = document.getElementById("btnAddBoard");
         const btnDeleteBoard = document.getElementById("btnDeleteBoard");
@@ -1621,6 +1544,8 @@
         const tokenModalOverlay = document.getElementById("tokenModalOverlay");
         const tokenModalClose = document.getElementById("tokenModalClose");
 
+        const weatherTokenPanelEl = document.getElementById("weatherTokenPanel");
+
         function setStatus(source, status, state) {
             if (sourceValEl) sourceValEl.textContent = source || "—";
             if (statusValEl) {
@@ -1630,6 +1555,29 @@
                 if (state === "ok") pill.classList.add("ok");
                 if (state === "warn") pill.classList.add("warn");
                 if (state === "err") pill.classList.add("err");
+            }
+        }
+
+        function isWeatherBoardObj(b) {
+            if (!b) return false;
+            return (b.type === "dynamic") && (String(b.source || "") === "openweather_onecall");
+        }
+
+        /* ============================================================
+           Weather visibility controller
+        ============================================================ */
+        function updateTokenHelperVisibility() {
+            const current = draft || (selectedKey ? pack.boards[selectedKey] : null);
+            const show = isWeatherBoardObj(current);
+
+            if (weatherTokenPanelEl) weatherTokenPanelEl.style.display = show ? "" : "none";
+            if (dashboardWeatherWrapEl) dashboardWeatherWrapEl.style.display = show ? "" : "none";
+
+            if (btnOpenTokenModal) btnOpenTokenModal.disabled = !show;
+            if (btnCopyTokenDoc) btnCopyTokenDoc.disabled = !show;
+
+            if (!show && tokenModalOverlay?.classList.contains("show")) {
+                closeTokenModal(true);
             }
         }
 
@@ -1658,12 +1606,14 @@
             if (!draft || !draftSaved) return false;
             return JSON.stringify(draft) !== JSON.stringify(draftSaved);
         }
+
         function updateDirtyUI() {
             const dirty = packIsDirty() || editorIsDirty();
             dirtyPillEl.style.display = dirty ? "inline-flex" : "none";
             btnSavePack.disabled = !dirty;
             btnDiscardEdits.disabled = !editorIsDirty();
         }
+
         function setHeaderMeta() {
             colsValEl.textContent = String(getCols());
             rowsValEl.textContent = String(getRows());
@@ -1673,7 +1623,7 @@
         }
 
         /* ============================================================
-           Token helper UI (✅ collapsible groups)
+           Token helper UI (collapsible groups)
         ============================================================ */
         function makeHelpGroup(group) {
             const g = document.createElement("div");
@@ -1720,7 +1670,6 @@
                     await navigator.clipboard.writeText(item.token);
                     toast(`Copied ${item.token}`);
 
-                    // ✅ Only auto-close when using the modal
                     if (tokenModalOverlay.classList.contains("show")) {
                         closeTokenModal(true);
                     }
@@ -1790,14 +1739,9 @@
         /* ============================================================
            Lists
         ============================================================ */
-        function boardLabel(key) {
-            const b = pack.boards[key];
-            return { name: b?.name || "(unnamed)", key };
-        }
-
         function makeItem(key, inRotation) {
             const b = pack.boards[key];
-            const { name } = boardLabel(key);
+            const name = b?.name || "(unnamed)";
 
             const item = document.createElement("div");
             item.className = "boardItem" + (key === selectedKey ? " selected" : "");
@@ -1910,9 +1854,6 @@
             updateDirtyUI();
         }
 
-        /* ============================================================
-           Rotation reorder / move
-        ============================================================ */
         function reorderRotation(fromKey, toKey) {
             const fromBoard = pack.boards[fromKey];
             const toBoard = pack.boards[toKey];
@@ -1998,6 +1939,7 @@
             renderRowInputs();
             renderLists();
             updateDirtyUI();
+            updateTokenHelperVisibility();
         }
 
         function clearEditor() {
@@ -2014,11 +1956,9 @@
             rowsContainerEl.innerHTML = "";
 
             updateDirtyUI();
+            updateTokenHelperVisibility();
         }
 
-        /* ============================================================
-           Row inputs
-        ============================================================ */
         function renderRowInputs() {
             rowsContainerEl.innerHTML = "";
             const cols = getCols();
@@ -2092,12 +2032,14 @@
                     sourceWrapEl.style.display = "none";
                     delete draft.source;
                 }
+                updateTokenHelperVisibility();
                 onDraftChanged();
             };
 
             boardSourceEl.oninput = () => {
                 draft.source = boardSourceEl.value;
                 onDraftChanged();
+                updateTokenHelperVisibility();
             };
 
             boardOneShotEl.onchange = () => {
@@ -2120,11 +2062,9 @@
             renderLists();
             setHeaderMeta();
             updateDirtyUI();
+            updateTokenHelperVisibility();
         }
 
-        /* ============================================================
-           Discard editor edits
-        ============================================================ */
         function discardEditorEdits() {
             if (!selectedKey || !draftSaved) return;
             draft = deepClone(draftSaved);
@@ -2133,9 +2073,6 @@
             toast("Edits discarded");
         }
 
-        /* ============================================================
-           Board CRUD
-        ============================================================ */
         function addBoard() {
             if (editorIsDirty()) {
                 const ok = confirm("You have unsaved edits.\n\nOK = discard edits and add a board.\nCancel = stay here.");
@@ -2187,9 +2124,6 @@
             toast("Removed from rotation");
         }
 
-        /* ============================================================
-           Global controls
-        ============================================================ */
         function bindRotationControls() {
             rotationEnabledEl.onchange = () => {
                 pack.rotation.enabled = !!rotationEnabledEl.checked;
@@ -2246,7 +2180,6 @@
                 updateDirtyUI();
             };
 
-            // Weather config (type/value/label)
             weatherTypeEl.onchange = () => {
                 ensureWeatherShape();
                 pack.meta.weather.location.type = weatherTypeEl.value;
@@ -2274,9 +2207,6 @@
             });
         }
 
-        /* ============================================================
-           Pad / Trim helpers
-        ============================================================ */
         function padAllRows() {
             if (!draft) return;
             const cols = getCols();
@@ -2285,6 +2215,7 @@
             selectBoard(selectedKey);
             toast("Rows padded");
         }
+
         function trimAllRows() {
             if (!draft) return;
             const cols = getCols();
@@ -2294,9 +2225,6 @@
             toast("Rows trimmed");
         }
 
-        /* ============================================================
-           Copy JSON
-        ============================================================ */
         async function copyJSON() {
             const cols = getCols();
             const rows = getRows();
@@ -2327,9 +2255,6 @@
             toast("JSON copied");
         }
 
-        /* ============================================================
-           Save pack (single Save button)
-        ============================================================ */
         async function savePack() {
             try {
                 await waitForGlobal("__flipboardFirestoreReady", 8000, 50);
@@ -2360,9 +2285,6 @@
             }
         }
 
-        /* ============================================================
-           Reload pack (discard local changes)
-        ============================================================ */
         async function reloadPack() {
             if (packIsDirty() || editorIsDirty()) {
                 const ok = confirm("Reload from Firestore and discard local changes?\n\nOK = reload\nCancel = stay here.");
@@ -2393,9 +2315,6 @@
             }
         }
 
-        /* ============================================================
-           Splitter resize
-        ============================================================ */
         (function enableSplitter() {
             const app = document.getElementById("appSplit");
             const splitter = document.getElementById("splitter");
@@ -2427,9 +2346,6 @@
             });
         })();
 
-        /* ============================================================
-           Init from pack
-        ============================================================ */
         function normalizePack(p) {
             p ||= {};
             p.meta ||= { grid: { columns: 20, rows: 8 }, description: "", weather: {} };
@@ -2437,14 +2353,12 @@
             p.rotation ||= { enabled: true, dwell_ms: 15000, order: [] };
             p.rotation.order ||= [];
 
-            // if someone still has "stages", keep conservative: migrate to boards
             if (!p.boards || typeof p.boards !== "object") p.boards = {};
             if (Object.keys(p.boards).length === 0 && p.stages && typeof p.stages === "object") {
-                p.boards = deepClone(p.stages);
+                p.boards = JSON.parse(JSON.stringify(p.stages));
             }
 
             ensureWeatherShape();
-
             return p;
         }
 
@@ -2472,11 +2386,10 @@
             else clearEditor();
 
             updateDirtyUI();
+            updateTokenHelperVisibility();
         }
 
-        /* ============================================================
-           Events
-        ============================================================ */
+        /* Events */
         btnAddBoard.addEventListener("click", addBoard);
         btnDeleteBoard.addEventListener("click", deleteBoard);
         btnAddToRotation.addEventListener("click", addSelectedToRotation);
@@ -2503,18 +2416,15 @@
         tokenModalOverlay.addEventListener("click", (e) => {
             if (e.target === tokenModalOverlay) closeTokenModal(true);
         });
+
         window.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && tokenModalOverlay.classList.contains("show")) {
                 closeTokenModal(true);
             }
         });
 
-        /* Render helpers immediately */
         renderTokenHelpers();
 
-        /* ============================================================
-           Bootstrap: Firestore load
-        ============================================================ */
         (async () => {
             setStatus("starting", "loading…", "warn");
 
@@ -2551,9 +2461,6 @@
             }
         })();
     </script>
-
-
-
 </body>
 
 </html>
