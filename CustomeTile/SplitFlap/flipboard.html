@@ -224,7 +224,6 @@
             background: rgba(255, 77, 77, .12);
         }
 
-        /* DEBUG OFF hides HUD */
         body.debug-off .hud {
             display: none;
         }
@@ -452,7 +451,7 @@
             applyDebugUI();
 
             /* ============================================================
-               OPENWEATHER CONFIG (display-side only)
+               OPENWEATHER CONFIG
             ============================================================ */
             const OWM_API_KEY = "1477cbdbd942d01b6e5b4eb630731226";
             const OWM_UNITS = "imperial";
@@ -514,7 +513,6 @@
             function resolvePath(root, path) {
                 if (!path || typeof path !== "string") return { ok: false, value: null };
                 let p = path.trim();
-
                 if (p.startsWith("weather.")) p = p.slice("weather.".length);
                 if (!PATH_OK.test(p)) return { ok: false, value: null };
 
@@ -522,10 +520,7 @@
                 for (const seg of p.split(".")) {
                     if (!seg) continue;
 
-                    if (/^\d+$/.test(seg)) {
-                        tokens.push(Number(seg));
-                        continue;
-                    }
+                    if (/^\d+$/.test(seg)) { tokens.push(Number(seg)); continue; }
 
                     const m = seg.match(/^([A-Za-z0-9_]+)(.*)$/);
                     if (!m) return { ok: false, value: null };
@@ -534,12 +529,8 @@
                     const rest = m[2] || "";
                     if (rest) {
                         const re = /\[(\d+)\]/g;
-                        let r;
-                        let consumed = "";
-                        while ((r = re.exec(rest)) !== null) {
-                            tokens.push(Number(r[1]));
-                            consumed += r[0];
-                        }
+                        let r; let consumed = "";
+                        while ((r = re.exec(rest)) !== null) { tokens.push(Number(r[1])); consumed += r[0]; }
                         if (consumed !== rest) return { ok: false, value: null };
                     }
                 }
@@ -563,12 +554,24 @@
             }
 
             /* ============================================================
-               PRESET TOKEN ENGINE
+               WEATHER CONFIG (NEW: board-level first, legacy fallback)
             ============================================================ */
-            function getWeatherConfig(pack) {
-                const w = pack?.meta?.weather;
+            function getWeatherConfig(pack, board) {
+                // ✅ NEW: board.weather.location = {type,value,label}
+                const bw = board?.weather?.location;
+                if (bw && typeof bw === "object") {
+                    const type = String(bw.type || "").toLowerCase();
+                    const value = String(bw.value || "").trim();
+                    const label = String(bw.label || "").trim();
+                    return {
+                        type: (type === "zip" || type === "city_state" || type === "city") ? type : "city",
+                        value,
+                        label
+                    };
+                }
 
-                // new spec: meta.weather.location = {type,value,label}
+                // ✅ Legacy: meta.weather.location may be object or string
+                const w = pack?.meta?.weather;
                 if (w && typeof w === "object" && w.location && typeof w.location === "object") {
                     const type = String(w.location.type || "").toLowerCase();
                     const value = String(w.location.value || "").trim();
@@ -580,7 +583,6 @@
                     };
                 }
 
-                // legacy: meta.weather.location = "BOILING SPRINGS, SC"
                 const legacy = (w && typeof w === "object") ? w.location : null;
                 if (typeof legacy === "string") {
                     const v = legacy.trim();
@@ -593,9 +595,9 @@
             function placeholderNumeric() { return "--"; }
             function placeholderText() { return "N/A"; }
 
-            function presetTokens(payload, pack) {
+            function presetTokens(payload, pack, board) {
                 const tzOff = payload?.timezone_offset;
-                const loc = getWeatherConfig(pack);
+                const loc = getWeatherConfig(pack, board);
                 const label = cleanText(loc.label || loc.value || "").toUpperCase() || placeholderText();
 
                 const t = roundInt(payload?.current?.temp);
@@ -675,11 +677,11 @@
                 return placeholderText();
             }
 
-            function resolveToken(token, payload, pack) {
+            function resolveToken(token, payload, pack, board) {
                 const raw = token.trim();
                 const presetKey = raw.toUpperCase();
 
-                const presets = presetTokens(payload, pack);
+                const presets = presetTokens(payload, pack, board);
                 if (presetKey in presets) return String(presets[presetKey] ?? tokenPlaceholderForTokenName(presetKey));
 
                 const { ok, value } = resolvePath(payload, raw);
@@ -687,9 +689,9 @@
                 return stringifyResolved(value);
             }
 
-            function renderRowWithTokens(row, payload, pack) {
+            function renderRowWithTokens(row, payload, pack, board) {
                 const s = String(row ?? "");
-                return s.replace(/\{([^}]+)\}/g, (_, inner) => resolveToken(inner, payload, pack));
+                return s.replace(/\{([^}]+)\}/g, (_, inner) => resolveToken(inner, payload, pack, board));
             }
 
             /* ============================================================
@@ -936,13 +938,13 @@
                     tile.innerHTML = `
             <div class="half top static"><span class="glyphText"> </span></div>
             <div class="half bottom static"><span class="glyphText"> </span></div>
-    
+
             <div class="flap top hidden">
               <div class="half top" style="position:relative;height:100%;">
                 <span class="glyphText"> </span>
               </div>
             </div>
-    
+
             <div class="flap bottom hidden">
               <div class="half bottom" style="position:relative;height:100%;">
                 <span class="glyphText"> </span>
@@ -951,7 +953,6 @@
           `;
                     board.appendChild(tile);
 
-                    // Debug toggle hotspot on TILE 0
                     if (i === 0) {
                         const hotspot = document.createElement("div");
                         hotspot.className = "debugHotspot";
@@ -1043,50 +1044,54 @@
             }
 
             /* ============================================================
-               WEATHER (per device) + GEOCODE (City / City,State / ZIP)
+               WEATHER (NEW: per-board location caching)
             ============================================================ */
-            let lastWeatherPayload = null;
             let weatherRefreshTimer = null;
 
-            let geoCache = { key: "", lat: null, lon: null, at: 0 };
+            // cache per locationKey => {lat,lon,geoAt,payload,payloadAt}
+            const weatherCache = new Map();
 
-            function normalizeLocationKey(loc) {
-                return cleanText(loc || "").toUpperCase();
+            function makeLocKey(cfg) {
+                const type = String(cfg?.type || "").toLowerCase();
+                const value = cleanText(cfg?.value || "");
+                if (!value) return "";
+                const t = (type === "zip" || type === "city_state" || type === "city") ? type : "city";
+                return `${t}:${value}`.toUpperCase();
             }
 
-            function needsGeocodeRefresh(locKey) {
-                if (!locKey) return true;
-                if (geoCache.key !== locKey) return true;
-                const age = Date.now() - (geoCache.at || 0);
+            function shouldRefreshPayload(entry) {
+                if (!entry?.payload) return true;
+                const age = Date.now() - (entry.payloadAt || 0);
+                return age > WEATHER_REFRESH_MS;
+            }
+
+            function shouldRefreshGeo(entry, locKey) {
+                if (!entry || entry.locKey !== locKey) return true;
+                if (typeof entry.lat !== "number" || typeof entry.lon !== "number") return true;
+                const age = Date.now() - (entry.geoAt || 0);
                 return age > (24 * 60 * 60 * 1000);
             }
 
-            async function geocodeLocation(pack) {
-                const cfg = getWeatherConfig(pack);
-                const value = cleanText(cfg.value || "");
-                const locKey = normalizeLocationKey(cfg.type + ":" + value);
+            async function geocodeCfg(cfg) {
+                const locKey = makeLocKey(cfg);
+                if (!locKey) return null;
 
-                if (!value) return null;
+                const existing = weatherCache.get(locKey) || { locKey };
+                if (!shouldRefreshGeo(existing, locKey)) return { lat: existing.lat, lon: existing.lon };
 
-                if (!needsGeocodeRefresh(locKey) && geoCache.lat != null && geoCache.lon != null) {
-                    return { lat: geoCache.lat, lon: geoCache.lon };
-                }
-
-                if (!OWM_API_KEY || OWM_API_KEY.includes("PUT_YOUR")) {
-                    throw new Error("OWM API key not set");
-                }
+                if (!OWM_API_KEY || OWM_API_KEY.includes("PUT_YOUR")) throw new Error("OWM API key not set");
 
                 let lat = null, lon = null;
 
                 if (cfg.type === "zip") {
-                    const zip = value.replace(/[^0-9]/g, "");
+                    const zip = String(cfg.value || "").replace(/[^0-9]/g, "");
                     const url = `https://api.openweathermap.org/geo/1.0/zip?zip=${encodeURIComponent(zip)},US&appid=${encodeURIComponent(OWM_API_KEY)}`;
                     const res = await fetch(url, { cache: "no-store" });
                     if (!res.ok) throw new Error(`Geo ZIP failed: ${res.status}`);
                     const j = await res.json();
                     lat = j?.lat; lon = j?.lon;
                 } else {
-                    const q = value;
+                    const q = String(cfg.value || "");
                     const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${encodeURIComponent(OWM_API_KEY)}`;
                     const res = await fetch(url, { cache: "no-store" });
                     if (!res.ok) throw new Error(`Geo direct failed: ${res.status}`);
@@ -1094,29 +1099,44 @@
                     lat = arr?.[0]?.lat; lon = arr?.[0]?.lon;
                 }
 
-                if (typeof lat !== "number" || typeof lon !== "number") {
-                    throw new Error("Could not resolve location to lat/lon");
-                }
+                if (typeof lat !== "number" || typeof lon !== "number") throw new Error("Could not resolve location to lat/lon");
 
-                geoCache = { key: locKey, lat, lon, at: Date.now() };
+                existing.lat = lat;
+                existing.lon = lon;
+                existing.geoAt = Date.now();
+                existing.locKey = locKey;
+                weatherCache.set(locKey, existing);
+
                 return { lat, lon };
             }
 
-            async function fetchWeatherForPack(pack) {
-                const geo = await geocodeLocation(pack);
+            async function fetchWeatherForCfg(cfg) {
+                const locKey = makeLocKey(cfg);
+                if (!locKey) return null;
+
+                const entry = weatherCache.get(locKey) || { locKey };
+                weatherCache.set(locKey, entry);
+
+                if (!shouldRefreshPayload(entry)) return entry.payload;
+
+                const geo = await geocodeCfg(cfg);
                 if (!geo) return null;
-                const { lat, lon } = geo;
 
                 const url =
                     `https://api.openweathermap.org/data/3.0/onecall?` +
-                    `lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}` +
+                    `lat=${encodeURIComponent(geo.lat)}&lon=${encodeURIComponent(geo.lon)}` +
                     `&exclude=minutely,hourly&appid=${encodeURIComponent(OWM_API_KEY)}` +
                     `&units=${encodeURIComponent(OWM_UNITS)}`;
 
+                console.log("[WEATHER] requesting:", url);
                 const res = await fetch(url, { cache: "no-store" });
                 if (!res.ok) throw new Error(`Weather fetch failed: ${res.status} ${res.statusText}`);
                 const json = await res.json();
-                lastWeatherPayload = json;
+
+                entry.payload = json;
+                entry.payloadAt = Date.now();
+                weatherCache.set(locKey, entry);
+
                 return json;
             }
 
@@ -1125,9 +1145,30 @@
                 weatherRefreshTimer = null;
             }
 
-            function packNeedsWeather(pack) {
+            function collectWeatherCfgs(pack) {
                 const boards = pack?.boards || {};
-                return Object.values(boards).some(st => (st?.type === "dynamic" && st?.source === "openweather_onecall"));
+                const cfgs = [];
+                for (const b of Object.values(boards)) {
+                    if (!b) continue;
+                    if ((b.type || "static") !== "dynamic") continue;
+                    if ((b.source || "") !== "openweather_onecall") continue;
+
+                    const cfg = getWeatherConfig(pack, b);
+                    if (cfg?.value) cfgs.push(cfg);
+                }
+
+                // unique by locKey
+                const seen = new Set();
+                return cfgs.filter(c => {
+                    const k = makeLocKey(c);
+                    if (!k || seen.has(k)) return false;
+                    seen.add(k);
+                    return true;
+                });
+            }
+
+            function packNeedsWeather(pack) {
+                return collectWeatherCfgs(pack).length > 0;
             }
 
             function startWeatherRefresh() {
@@ -1135,12 +1176,19 @@
 
                 const loop = async () => {
                     try {
-                        const w = await fetchWeatherForPack(boardPack);
-                        if (!w) return;
-                        if (DEBUG_ENABLED) console.log("[WEATHER] fetched ok");
+                        const cfgs = collectWeatherCfgs(boardPack);
+                        for (const cfg of cfgs) {
+                            try {
+                                await fetchWeatherForCfg(cfg);
+                                if (DEBUG_ENABLED) console.log("[WEATHER] refreshed:", makeLocKey(cfg));
+                            } catch (e) {
+                                console.warn("[WEATHER] refresh failed:", makeLocKey(cfg), e);
+                            }
+                        }
                     } catch (e) {
-                        console.warn("[WEATHER] fetch failed:", e);
+                        console.warn("[WEATHER] refresh loop error:", e);
                     }
+
                     weatherRefreshTimer = setTimeout(loop, WEATHER_REFRESH_MS);
                 };
 
@@ -1148,15 +1196,16 @@
             }
 
             /* ============================================================
-               BOARD PACK (schema = meta + rotation + boards)
+               BOARD PACK
             ============================================================ */
             const FALLBACK_STAGE_PACK = {
-                meta: { grid: { columns: 20, rows: 8 }, description: "Fallback", weather: { location: "" } },
+                meta: { grid: { columns: 20, rows: 8 }, description: "Fallback" },
                 rotation: { enabled: true, dwell_ms: 15000, order: ["stage_1", "stage_2"] },
                 boards: {
                     stage_1: { name: "Welcome", type: "static", rows: ["WELCOME", "JAKE", "SMART HOME DASHBOARD", "", "SPLIT FLAP DISPLAY", "", "", ""] },
                     stage_2: {
                         name: "Weather", type: "dynamic", source: "openweather_onecall",
+                        weather: { location: { type: "city_state", value: "Boiling Springs, SC", label: "BOILING SPGS SC" } },
                         rows: ["{LOCATION}", "{TEMP_LINE}", "{CONDITION_LINE}  {WIND_LINE}", "", "UPDATED: {TIME}", "", "", ""]
                     }
                 }
@@ -1171,20 +1220,15 @@
                 p.meta ||= {};
                 p.meta.grid ||= { columns: 20, rows: 8 };
                 p.meta.description ||= "";
-                p.meta.weather ||= {};
-                // meta.weather.location can be a string (legacy) or an object {type,value,label}
 
                 p.rotation ||= {};
                 if (typeof p.rotation.enabled !== "boolean") p.rotation.enabled = true;
                 if (typeof p.rotation.dwell_ms !== "number") p.rotation.dwell_ms = DEFAULT_DWELL_MS;
                 if (!Array.isArray(p.rotation.order)) p.rotation.order = [];
 
-                // boards container is required by your display code
                 p.boards ||= {};
-
                 return p;
             }
-
 
             /* ============================================================
                ROTATION
@@ -1223,21 +1267,23 @@
                     return;
                 }
 
-                // Static
-                // Dynamic: OpenWeather One Call
+                // Dynamic: OpenWeather One Call (per-board cfg)
                 if ((st.type || "static") === "dynamic" && (st.source || "") === "openweather_onecall") {
-                    if (!lastWeatherPayload) {
-                        try { await fetchWeatherForPack(boardPack); }
-                        catch (e) { console.warn("[WEATHER] initial fetch failed:", e); }
+                    const cfg = getWeatherConfig(boardPack, st);
+
+                    let payload = null;
+                    try {
+                        payload = await fetchWeatherForCfg(cfg);
+                    } catch (e) {
+                        console.warn("[WEATHER] board fetch failed:", stageKey, makeLocKey(cfg), e);
                     }
 
                     const rows = Array.isArray(st.rows) ? st.rows : [];
-
-                    if (lastWeatherPayload) {
-                        const rendered = rows.map(r => renderRowWithTokens(r, lastWeatherPayload, boardPack));
+                    if (payload) {
+                        const rendered = rows.map(r => renderRowWithTokens(r, payload, boardPack, st));
                         await setLinesAndWait(asRows(rendered));
                     } else {
-                        const rendered = rows.map(r => renderRowWithTokens(r, null, boardPack));
+                        const rendered = rows.map(r => renderRowWithTokens(r, null, boardPack, st));
                         await setLinesAndWait(asRows(rendered.length ? rendered : ["WEATHER", "UNAVAILABLE", "", "", "", "", "", ""]));
                     }
                     return;
@@ -1246,10 +1292,6 @@
                 // Static
                 await setLinesAndWait(asRows(st.rows || []));
             }
-
-
-
-
 
             function startRotation() {
                 rotateEnabled = true;
@@ -1390,7 +1432,6 @@
             })();
         }
     </script>
-
 
 </body>
 
